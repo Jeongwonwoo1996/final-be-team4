@@ -5,6 +5,7 @@ import com.fourformance.tts_vc_web.common.constant.APIUnitStatusConst;
 import com.fourformance.tts_vc_web.common.exception.common.BusinessException;
 import com.fourformance.tts_vc_web.common.exception.common.ErrorCode;
 import com.fourformance.tts_vc_web.common.util.CommonFileUtils;
+import com.fourformance.tts_vc_web.common.util.GoogleTTSClient;
 import com.fourformance.tts_vc_web.domain.entity.APIStatus;
 import com.fourformance.tts_vc_web.domain.entity.TTSDetail;
 import com.fourformance.tts_vc_web.domain.entity.TTSProject;
@@ -40,6 +41,9 @@ public class TTSService_team_api {
     private final VoiceStyleRepository voiceStyleRepository;
     private final TTSService_team_multi ttsServiceTeamMulti; // 통합 서비스 호출을 위한 클래스
     private final S3Service s3Service; // S3 파일 업로드를 처리하는 서비스
+
+    // GoogleTTSClient 주입
+    private final GoogleTTSClient googleTTSClient;
 
     private static final Logger LOGGER = Logger.getLogger(TTSService_team_api.class.getName()); // 로그 기록을 위한 Logger
 
@@ -192,6 +196,7 @@ public class TTSService_team_api {
         String gender = voiceStyleRepository.findById(detailDto.getUnitVoiceStyleId()).get().getGender();
         String script = detailDto.getUnitScript();
 
+
         System.out.println("gender = " + gender);
         System.out.println("languageCode = " + languageCode);
         System.out.println("script = " + script);
@@ -215,7 +220,10 @@ public class TTSService_team_api {
         APIStatus apiStatus = APIStatus.createAPIStatus(null, ttsDetail, requestPayload);
         apiStatusRepository.save(apiStatus);
 
-        try (TextToSpeechClient textToSpeechClient = TextToSpeechClient.create()) {
+        try {
+            // 주입받은 GoogleTTSClient 통해 TextToSpeechClient 사용
+            TextToSpeechClient textToSpeechClient = googleTTSClient.getTextToSpeechClient();
+
             // Google TTS API 요청 생성
             SynthesisInput input = SynthesisInput.newBuilder()
                     .setText(Optional.ofNullable(detailDto.getUnitScript())
@@ -263,7 +271,7 @@ public class TTSService_team_api {
 
             LOGGER.info("Google TTS API 호출 성공");
             return response.getAudioContent();
-        } catch (IOException e) {
+        } catch (Exception e) {
 
             apiStatus.updateResponseInfo(requestPayload, 500, APIUnitStatusConst.FAILURE);
             apiStatusRepository.save(apiStatus); // 상태 저장

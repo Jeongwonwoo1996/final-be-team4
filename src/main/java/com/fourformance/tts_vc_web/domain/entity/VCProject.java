@@ -34,6 +34,8 @@ public class VCProject extends Project {
     @Column(name = "trg_voice_id", length = 50)
     private String trgVoiceId; // 새로 추가된 필드 -> 타겟 보이스 Id
 
+    private String projectType = "VC";
+
     // 생성 메서드
     public static VCProject createVCProject(Member member, String projectName) {
         VCProject vcProject = new VCProject();

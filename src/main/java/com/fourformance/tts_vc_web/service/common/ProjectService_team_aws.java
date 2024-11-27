@@ -101,6 +101,10 @@ public class ProjectService_team_aws {
 
     }
 
+//    public List<ProjectListDto> getProjects(Long memberId, String keyword) {
+//        return projectRepository.findProjectsBySearchCriteria(memberId, keyword);
+//    }
+
     // Concat 선택된 오디오 모든 항목 삭제
     @Transactional
     public void deleteAudioIds(List<Long> audioIds) {

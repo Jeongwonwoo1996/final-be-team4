@@ -75,6 +75,26 @@ public class Member extends BaseEntity {
         this.deletedAt = null;
     }
 
+    // 회원 이름 업데이트 메서드 추가 - 원우
+    public void updateMemberName(String name) {
+        this.name = name;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    // 회원 전화번호 업데이트 메서드 추가 - 원우
+    public void updateMemberPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    // 회원 비밀번호 업데이트 메서드 추가 - 원우
+    public void updateMemberPwd(String pwd) {
+        this.pwd = pwd;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+
+
 
 
 }

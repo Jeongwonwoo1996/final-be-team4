@@ -1,6 +1,7 @@
 package com.fourformance.tts_vc_web.domain.entity;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -14,6 +15,7 @@ import lombok.ToString;
 public class ConcatProject extends Project {
     private Float globalFrontSilenceLength = 0.0F;
     private Float globalTotalSilenceLength = 0.0F;
+    private String projectType = "CONCAT";
 
     // 생성 메서드
     public static ConcatProject createConcatProject(Member member, String projectName) {
@@ -26,7 +28,8 @@ public class ConcatProject extends Project {
     }
 
     // 업데이트 메서드
-    public void updateConcatProject(String projectName, Float globalFrontSilenceLength, Float globalTotalSilenceLength) {
+    public void updateConcatProject(String projectName, Float globalFrontSilenceLength,
+                                    Float globalTotalSilenceLength) {
         super.projectName = projectName;
         this.globalFrontSilenceLength = globalFrontSilenceLength;
         this.globalTotalSilenceLength = globalTotalSilenceLength;

@@ -1,5 +1,6 @@
 package com.fourformance.tts_vc_web;
 
+import com.fourformance.tts_vc_web.common.constant.APIStatusConst;
 import com.fourformance.tts_vc_web.common.constant.AudioType;
 import com.fourformance.tts_vc_web.common.constant.ProjectType;
 import com.fourformance.tts_vc_web.domain.entity.ConcatDetail;
@@ -52,9 +53,8 @@ public class DummyDataInitializer {
     }
 
     private void initializeData() {
-        // VoiceStyle이 미리 데이터베이스에 존재한다고 가정
+        // VoiceStyle 데이터 확인
         List<VoiceStyle> voiceStyles = voiceStyleRepository.findAll();
-
         if (voiceStyles.isEmpty()) {
             throw new IllegalStateException("VoiceStyle 데이터가 없습니다. data.sql을 확인하세요.");
         }
@@ -63,47 +63,51 @@ public class DummyDataInitializer {
         List<Member> members = List.of(
                 Member.createMember("user1@example.com", "password123", "User One", 0,
                         LocalDateTime.of(1990, 1, 1, 0, 0), "123-456-7890"),
-                Member.createMember("user2@example.com", "password456", "User Two", 0,
+                Member.createMember("user2@example.com", "password456", "User Two", 1,
                         LocalDateTime.of(1995, 5, 15, 0, 0), "234-567-8901"),
                 Member.createMember("user3@example.com", "password789", "User Three", 0,
                         LocalDateTime.of(1985, 3, 20, 0, 0), "345-678-9012")
         );
-
         memberRepository.saveAll(members);
 
         Member firstMember = members.get(0);
 
         // TTS 프로젝트 및 디테일 생성
-        for (int i = 1; i <= 5; i++) {
+        for (int i = 1; i <= 10; i++) { // 멤버 1에게 10개의 TTS 프로젝트 생성
             VoiceStyle voiceStyle = voiceStyles.get((i - 1) % voiceStyles.size());
             TTSProject ttsProject = TTSProject.createTTSProject(
                     firstMember,
-                    "TTS Project " + i,
+                    "티티에스 프로젝트 " + i,
                     voiceStyle,
-                    "This is the full script for project " + i,
+                    "This is the full script for TTS project " + i,
                     1.0f + i * 0.1f,
-                    0.0f,
-                    0.0f
+                    i % 2 == 0 ? 0.5f : -0.3f,
+                    i % 3 == 0 ? 0.2f : 0.0f
             );
 
+            // 다양한 상태 추가
+            ttsProject.updateAPIStatus(APIStatusConst.values()[i % APIStatusConst.values().length]);
             ttsProjectRepository.save(ttsProject);
 
             for (int j = 1; j <= 5; j++) {
                 TTSDetail ttsDetail = TTSDetail.createTTSDetail(
                         ttsProject,
-                        "Unit script " + j,
+                        "Unit script " + j, // 기본 스크립트
                         j
                 );
 
-                ttsDetail.updateTTSDetail(
-                        voiceStyle,
-                        "Unit script " + j,
-                        1.0f + j * 0.1f,
-                        0.0f,
-                        0.0f,
-                        j,
-                        false
-                );
+                // 짝수 디테일만 업데이트
+                if (j % 2 == 0) {
+                    ttsDetail.updateTTSDetail(
+                            voiceStyle,
+                            "Updated script " + j + " of TTS Project " + i,
+                            1.0f + j * 0.1f,
+                            j % 2 == 0 ? 0.3f : -0.2f,
+                            j % 3 == 0 ? 0.5f : 0.1f,
+                            j,
+                            false
+                    );
+                }
 
                 ttsDetailRepository.save(ttsDetail);
 
@@ -121,21 +125,28 @@ public class DummyDataInitializer {
         }
 
         // VC 프로젝트 및 디테일 생성
-        for (int i = 1; i <= 5; i++) {
+        for (int i = 1; i <= 7; i++) { // 멤버 1에게 7개의 VC 프로젝트 생성
             VCProject vcProject = VCProject.createVCProject(
                     firstMember,
-                    "VC Project " + i
+                    "브이씨 프로젝트 " + i
             );
 
+            // 다양한 상태 추가
+            vcProject.updateAPIStatus(APIStatusConst.values()[i % APIStatusConst.values().length]);
+            vcProject.updateTrgVoiceId("Voice_" + i);
             vcProjectRepository.save(vcProject);
 
-            for (int j = 1; j <= 5; j++) {
+            for (int j = 1; j <= 4; j++) {
                 VCDetail vcDetail = VCDetail.createVCDetail(
                         vcProject,
-                        null // memberAudioMeta는 여기서 null로 시작합니다.
+                        null
                 );
 
-                vcDetail.updateDetails(false, "Unit script " + j);
+                // 짝수 디테일만 업데이트
+                if (j % 2 == 0) {
+                    vcDetail.updateDetails(j % 2 == 0, "Updated script " + j + " for VC Project " + i);
+                }
+
                 vcDetailRepository.save(vcDetail);
 
                 // OutputAudioMeta 생성
@@ -152,16 +163,16 @@ public class DummyDataInitializer {
         }
 
         // Concat 프로젝트 및 디테일 생성
-        for (int i = 1; i <= 5; i++) {
+        for (int i = 1; i <= 6; i++) { // 멤버 1에게 6개의 Concat 프로젝트 생성
             ConcatProject concatProject = ConcatProject.createConcatProject(
                     firstMember,
-                    "Concat Project " + i
+                    "컨캣 프로젝트 " + i
             );
 
+            concatProject.updateConcatProject("Updated Concat Project " + i, 0.1f * i, 0.2f * i);
             concatProjectRepository.save(concatProject);
 
             for (int j = 1; j <= 5; j++) {
-                // MemberAudioMeta 추가
                 MemberAudioMeta memberAudioMeta = MemberAudioMeta.createMemberAudioMeta(
                         firstMember,
                         "bucket/concat_project_" + i + "_detail_" + j,
@@ -174,10 +185,15 @@ public class DummyDataInitializer {
                         concatProject,
                         j,
                         true,
-                        "Concat unit script " + j,
+                        "Concat unit script " + j + " of Concat Project " + i, // 기본 스크립트
                         0.2f * j,
-                        memberAudioMeta // MemberAudioMeta 연결
+                        memberAudioMeta
                 );
+
+                // 짝수 디테일만 업데이트
+                if (j % 2 == 0) {
+                    concatDetail.updateDetails(j, true, "Updated concat script " + j, 0.2f * j);
+                }
 
                 concatDetailRepository.save(concatDetail);
             }

@@ -37,6 +37,7 @@ public class TTSProject extends Project {
     @Column(name = "api_status_modified_at")
     private LocalDateTime APIStatusModifiedAt;
 
+    private String projectType = "TTS";
 
     // 생성 메서드
     public static TTSProject createTTSProject(Member member, String projectName, VoiceStyle voiceStyle,

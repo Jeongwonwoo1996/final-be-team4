@@ -46,7 +46,15 @@ public class SwaggerConfig {
     public GroupedOpenApi s3Api() {
         return GroupedOpenApi.builder()
                 .group("S3 Test")
-                .pathsToMatch("/s3_test/**") // '/tts'로 시작하는 모든 엔드포인트를 포함
+                .pathsToMatch("/s3_test/**") // '/workspace'로 시작하는 모든 엔드포인트를 포함
+                .build();
+    }
+
+    @Bean
+    public GroupedOpenApi workspaceApi() {
+        return GroupedOpenApi.builder()
+                .group("Workspace API")
+                .pathsToMatch("/workspace/**") // '/tts'로 시작하는 모든 엔드포인트를 포함
                 .build();
     }
 

@@ -2,7 +2,7 @@ name: Gradle Build and Docker Deploy
 
 on:
   push:
-    branches: ["main"]
+    branches: [ "main" ]
   workflow_dispatch:
 
 jobs:
@@ -72,9 +72,9 @@ jobs:
             sudo docker run -d -p 8080:8080 --name backend popomance/backend:latest
             sudo docker system prune -f -a
 
-            # 컨테이너 로그 출력
-            echo "=== Docker Container Logs ==="
-            sudo docker logs --tail 50 backend
+                   컨테이너 로그 출력
+                        echo "=== Docker Container Logs ==="
+                        sudo docker logs --tail 50 backend
 
       - name: Notify Slack - Success
         if: success()

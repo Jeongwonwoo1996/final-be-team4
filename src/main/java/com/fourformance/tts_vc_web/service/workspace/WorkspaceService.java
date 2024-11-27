@@ -2,27 +2,25 @@ package com.fourformance.tts_vc_web.service.workspace;
 
 import com.fourformance.tts_vc_web.common.constant.APIStatusConst;
 import com.fourformance.tts_vc_web.common.constant.APIUnitStatusConst;
+import com.fourformance.tts_vc_web.common.constant.ProjectType;
 import com.fourformance.tts_vc_web.common.exception.common.BusinessException;
 import com.fourformance.tts_vc_web.common.exception.common.ErrorCode;
+import com.fourformance.tts_vc_web.domain.entity.APIStatus;
 import com.fourformance.tts_vc_web.domain.entity.OutputAudioMeta;
 import com.fourformance.tts_vc_web.domain.entity.Project;
-import com.fourformance.tts_vc_web.domain.entity.TTSDetail;
-import com.fourformance.tts_vc_web.domain.entity.VCDetail;
 import com.fourformance.tts_vc_web.domain.entity.TTSProject;
 import com.fourformance.tts_vc_web.domain.entity.VCProject;
-import com.fourformance.tts_vc_web.domain.entity.APIStatus;
 import com.fourformance.tts_vc_web.dto.workspace.RecentExportDto;
 import com.fourformance.tts_vc_web.dto.workspace.RecentProjectDto;
 import com.fourformance.tts_vc_web.repository.OutputAudioMetaRepository;
 import com.fourformance.tts_vc_web.repository.ProjectRepository;
-
+import com.fourformance.tts_vc_web.service.common.S3Service;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
-
-import com.fourformance.tts_vc_web.service.common.S3Service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+
 @Service
 @RequiredArgsConstructor
 public class WorkspaceService {
@@ -76,7 +74,7 @@ public class WorkspaceService {
                 return "Concat";
             default:
                 throw new BusinessException(ErrorCode.UNSUPPORTED_PROJECT_TYPE); // 지원하지 않는 타입 처리
-        }
+        } //
     }
 
     /**
@@ -96,7 +94,6 @@ public class WorkspaceService {
      * }
      *
      */
-
 
 
     /**
@@ -125,22 +122,26 @@ public class WorkspaceService {
         // 공통설정
         dto.setMetaId(meta.getId()); // 메타아이디를 넣는거는 상관없음
         dto.setFileName(extractFileName(meta.getBucketRoute()));
+//        dto.setBucketRoute(meta.getBucketRoute());
         dto.setUrl(s3Service.generatePresignedUrl(meta.getBucketRoute()));
         dto.setUnitStatus(getLatestUnitStatusFromMeta(meta));
-        dto.setUpdatedAt(meta.getLastModifiedDate());
 
-
-        if(meta.getTtsDetail() != null) {
+        if (meta.getTtsDetail() != null) {
             dto.setProjectName(meta.getTtsDetail().getTtsProject().getProjectName());
+            dto.setProjectType(ProjectType.TTS);
             dto.setScript(meta.getTtsDetail().getUnitScript());
 
-        }else if (meta.getVcDetail() != null) {
+        } else if (meta.getVcDetail() != null) {
             dto.setProjectName(meta.getVcDetail().getVcProject().getProjectName());
+            dto.setProjectType(ProjectType.VC);
             dto.setScript(meta.getVcDetail().getUnitScript());
 
         } else if (meta.getConcatProject() != null) {
+            List<String> scripts = outputAudioMetaRepository.findConcatDetailScriptsByOutputAudioMetaId(meta.getId());
+            String combinedScripts = String.join(" ", scripts);
+            dto.setProjectType(ProjectType.CONCAT);
             dto.setProjectName(meta.getConcatProject().getProjectName());
-            dto.setScript(null); // 조인해야지 볼 수 있음.
+            dto.setScript(combinedScripts); // 조인해야지 볼 수 있음.
         }
 
         return dto;
@@ -161,11 +162,15 @@ public class WorkspaceService {
         }
         return null;
     }
+
     private APIUnitStatusConst getLatestApiStatus(List<APIStatus> apiStatuses) {
         return apiStatuses.stream()
-                .max(Comparator.comparing(APIStatus::getRequestAt)) // 가장 최신 APIStatus를 가져옴
+                .max(Comparator.comparing(APIStatus::getResponseAt)) // 가장 최신 APIStatus를 가져옴
                 .map(APIStatus::getApiUnitStatusConst) // APIUnitStatusConst 추출
                 .orElse(null); // 없을 경우 null 반환
     }
+
+    // =========================  프로젝트 목록 ==========================
+
 
 }
