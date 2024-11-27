@@ -99,6 +99,7 @@ public class TTSService_team_api {
                 LOGGER.info("TTSDetail 처리 완료: " + detailDto);
 
             } catch (Exception e) {
+                e.printStackTrace();
                 LOGGER.severe("TTSDetail 처리 중 오류 발생: " + detailDto + ", 메시지: " + e.getMessage());
                 // 디테일 처리 실패 시 예외 발생
                 throw new BusinessException(ErrorCode.TTS_DETAIL_PROCESSING_FAILED);
