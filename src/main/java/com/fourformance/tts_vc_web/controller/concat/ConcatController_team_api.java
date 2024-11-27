@@ -14,6 +14,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
@@ -51,10 +52,18 @@ public class ConcatController_team_api {
     })
     public ResponseDto convertMultipleAudios(
             @RequestPart("concatRequestDto") @Parameter(description = "요청 DTO") ConcatRequestDto concatRequestDto,
-            @RequestPart("files") @Parameter(description = "업로드할 파일들") List<MultipartFile> files
+            @RequestPart("files") @Parameter(description = "업로드할 파일들") List<MultipartFile> files, HttpSession session
     ) {
-
         LOGGER.info("컨트롤러 메서드 호출됨: " + concatRequestDto); // 요청 데이터 로깅
+
+        // 세션에 임의의 memberId 설정
+        if (session.getAttribute("memberId") == null) {
+            session.setAttribute("memberId", 1L);
+
+        }
+        // 임시 하드 코딩 -> 회원/로그인 개발 구현 후 수정 필요
+        Long memberId = (Long) session.getAttribute("memberId");
+
 
         // 1. 유효성 검증: 요청 데이터 및 상세 데이터 확인
         if (concatRequestDto == null ||
@@ -85,7 +94,7 @@ public class ConcatController_team_api {
             }
 
             // 4. 서비스 로직 호출: 병합 처리 실행
-            ConcatResponseDto concatResponse = concatService.convertAllConcatDetails(concatRequestDto);
+            ConcatResponseDto concatResponse = concatService.convertAllConcatDetails(concatRequestDto, memberId);
 
             LOGGER.info("오디오 병합 성공"); // 성공 로그
             // 5. 성공적인 응답 반환

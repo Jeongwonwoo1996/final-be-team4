@@ -91,11 +91,11 @@ public class ConcatService_team_api {
      * @param concatRequestDto 요청 데이터 DTO
      * @return 병합 결과 DTO
      */
-    public ConcatResponseDto convertAllConcatDetails(ConcatRequestDto concatRequestDto) {
+    public ConcatResponseDto convertAllConcatDetails(ConcatRequestDto concatRequestDto, Long memberId) {
         LOGGER.info("convertAllConcatDetails 호출: " + concatRequestDto);
 
         // 1. 프로젝트 생성 또는 업데이트
-        ConcatProject concatProject = saveOrUpdateProject(concatRequestDto);
+        ConcatProject concatProject = saveOrUpdateProject(concatRequestDto, memberId);
 
         // 2. 응답 DTO 생성 및 초기화
         ConcatResponseDto concatResponseDto = initializeResponseDto(concatProject);
@@ -214,21 +214,21 @@ public class ConcatService_team_api {
     /**
      * 프로젝트 생성 또는 업데이트
      */
-    private ConcatProject saveOrUpdateProject(ConcatRequestDto concatRequestDto) {
+    private ConcatProject saveOrUpdateProject(ConcatRequestDto concatRequestDto, Long memberId) {
         return Optional.ofNullable(concatRequestDto.getProjectId())
                 .map(projectId -> {
-                    updateProject(concatRequestDto);
+                    updateProject(concatRequestDto, memberId);
                     return concatProjectRepository.findById(projectId)
                             .orElseThrow(() -> new BusinessException(ErrorCode.NOT_EXISTS_PROJECT));
                 })
-                .orElseGet(() -> createNewProject(concatRequestDto));
+                .orElseGet(() -> createNewProject(concatRequestDto, memberId));
     }
 
     /**
      * 새로운 프로젝트 생성
      */
-    private ConcatProject createNewProject(ConcatRequestDto dto) {
-        Member member = memberRepository.findById(dto.getMemberId())
+    private ConcatProject createNewProject(ConcatRequestDto dto, Long memberId) {
+        Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
         ConcatProject concatProject = ConcatProject.createConcatProject(member, dto.getProjectName());
@@ -244,11 +244,11 @@ public class ConcatService_team_api {
     /**
      * 기존 프로젝트 업데이트
      */
-    private void updateProject(ConcatRequestDto dto) {
+    private void updateProject(ConcatRequestDto dto, Long memberId) {
         ConcatProject project = concatProjectRepository.findById(dto.getProjectId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_EXISTS_PROJECT));
 
-        if (!project.getMember().getId().equals(dto.getMemberId())) {
+        if (!project.getMember().getId().equals(memberId)) {
             throw new BusinessException(ErrorCode.MEMBER_PROJECT_NOT_MATCH);
         }
 
