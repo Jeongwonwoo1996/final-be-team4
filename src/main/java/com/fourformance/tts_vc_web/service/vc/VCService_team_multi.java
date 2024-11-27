@@ -71,6 +71,15 @@ public class VCService_team_multi {
         return resDto;
     }
 
+    @Transactional(readOnly = true)
+    public List<TrgAudioDto> getTrgAudioList(Long memberId){
+        List<MemberAudioMeta> memberAudioMetaList = memberAudioMetaRepository.findByMemberIdAndAudioType(memberId, AudioType.VC_TRG);
+
+        return memberAudioMetaList.stream()
+                .map(meta -> new TrgAudioDto(meta.getId(), meta.getAudioUrl()))
+                .toList();
+    }
+
 
 
     // VC 프로젝트 상세 값 조회하기
