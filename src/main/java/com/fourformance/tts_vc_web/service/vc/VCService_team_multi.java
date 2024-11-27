@@ -46,20 +46,11 @@ public class VCService_team_multi {
         // VCProjectDto로 변환
         VCProjectDto vcPrjDto = VCProjectDto.createVCProjectDto(vcProject);
 
+        Long memberId = vcProject.getMember().getId();
+
         List<TrgAudioDto> trgAudioDtos = null; // 변경된 구조에 맞는 변수 선언
-        if (vcPrjDto.getId() != null) {
-            // MemberAudioMeta ID 조회
-            List<Long> memberAudioIds = memberAudioVCRepository.findMemberAudioMetaByVcProjectId(vcPrjDto.getId());
-
-            // Audio URL과 ID 조회하여 TrgAudioDto 리스트 생성
-            List<MemberAudioMeta> memberAudioMetaList = memberAudioMetaRepository.findByMemberAudioIds(
-                    memberAudioIds, AudioType.VC_TRG
-            );
-
-            // MemberAudioMeta를 TrgAudioDto로 변환
-            trgAudioDtos = memberAudioMetaList.stream()
-                    .map(meta -> new TrgAudioDto(meta.getId(), meta.getAudioUrl()))
-                    .toList();
+        if (vcPrjDto.getId() != null && memberId != null) {
+            trgAudioDtos = getTrgAudioList(memberId);
         }
 
         // VCProjectResDto 생성 및 반환
@@ -76,6 +67,7 @@ public class VCService_team_multi {
         List<MemberAudioMeta> memberAudioMetaList = memberAudioMetaRepository.findByMemberIdAndAudioType(memberId, AudioType.VC_TRG);
 
         return memberAudioMetaList.stream()
+                .filter(meta -> !meta.getIsDeleted())
                 .map(meta -> new TrgAudioDto(meta.getId(), meta.getAudioUrl()))
                 .toList();
     }
