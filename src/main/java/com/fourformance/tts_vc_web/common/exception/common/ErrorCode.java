@@ -124,7 +124,7 @@ public enum ErrorCode {
     UNKNOWN_TASK_TYPE(6000, HttpStatus.NOT_FOUND, "작업 유형을 알 수 없습니다."),
 
 
-    // 6000번대 코드 : 작업 큐 관련 예외
+    // 7000번대 코드 : 작업 큐 관련 예외
     UNKNOWN_TASK_TYPE(6000, HttpStatus.NOT_FOUND, "작업 유형을 알 수 없습니다."),
 
 
