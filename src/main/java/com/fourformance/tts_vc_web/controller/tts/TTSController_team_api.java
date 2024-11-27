@@ -58,12 +58,12 @@ public class TTSController_team_api {
     public ResponseDto convertBatchTexts(@RequestBody TTSSaveDto ttsSaveDto, HttpSession session) {
         LOGGER.info("컨트롤러 호출됨: " + ttsSaveDto);
 
-        // 세션에 임의의 memberId 설정
+        // 세션에 memberId 값이 설정되지 않았다면 예외 처리
         if (session.getAttribute("memberId") == null) {
-            session.setAttribute("memberId", 1L);
-
+            throw new BusinessException(ErrorCode.SESSION_MEMBER_ID_NOT_SET);
         }
-        // 임시 하드 코딩 -> 회원/로그인 개발 구현 후 수정 필요
+
+        // 세션에 memberId 값 설정
         Long memberId = (Long) session.getAttribute("memberId");
 
         // 유효성 검증: 요청 데이터가 null이거나 텍스트 세부사항 리스트가 비어있는 경우 예외 처리

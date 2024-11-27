@@ -116,6 +116,7 @@ public enum ErrorCode {
     PASSWORD_MISMATCH(6001, HttpStatus.BAD_REQUEST, "비밀번호가 일치하지 않습니다."),
     CURRENT_PASSWORD_MISMATCH(6002, HttpStatus.BAD_REQUEST, "현재 비밀번호가 일치하지 않습니다."),
     NEW_PASSWORD_MISMATCH(6003, HttpStatus.BAD_REQUEST, "새 비밀번호가 일치하지 않습니다."),
+    SESSION_MEMBER_ID_NOT_SET(6004, HttpStatus.UNAUTHORIZED, "세션에 회원ID 값이 설정되지 않았습니다. 로그인을 먼저 진행해주세요."),
 
 
 
