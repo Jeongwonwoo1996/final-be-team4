@@ -105,7 +105,7 @@ public class ConcatService_team_api {
             List<ConcatResponseDetailDto> responseDetails = processRequestDetails(concatRequestDto, concatProject);
 
             // 4. 병합된 오디오 생성 및 S3 업로드
-            String mergedFileUrl = mergeAudioFilesAndUploadToS3(responseDetails, uploadDir, concatRequestDto.getMemberId(), concatProject.getId());
+            String mergedFileUrl = mergeAudioFilesAndUploadToS3(responseDetails, uploadDir, memberId, concatProject.getId());
 
             // 응답 DTO에 데이터 설정
             concatResponseDto.setOutputConcatAudios(Collections.singletonList(mergedFileUrl));
