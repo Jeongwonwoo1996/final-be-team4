@@ -58,9 +58,9 @@ public class TTSViewController_team_multi {
     @PostMapping("/save")
     public ResponseDto ttsSave(@RequestBody TTSSaveDto ttsSaveDto, HttpSession session) {
         try {
-            // 세션에 임의의 memberId 설정
+            // 세션에 memberId 설정
             if (session.getAttribute("memberId") == null) {
-                session.setAttribute("memberId", 1L);
+                throw new BusinessException(ErrorCode.MEMBER_NOT_FOUND);
             }
 
             Long memberId = (Long) session.getAttribute("memberId");

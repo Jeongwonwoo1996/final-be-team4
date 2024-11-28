@@ -11,6 +11,8 @@ public class TaskConsumer {
     public void handleTTSTask(String message) {
         System.out.println("TTS audio task : " + message);
         // 처리 로직 구현
+
+        // TTS 생성 로직 구현
     }
 
     @RabbitListener(queues = TaskConfig.VC_QUEUE)

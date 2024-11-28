@@ -40,8 +40,12 @@ public class VCViewController_team_multi {
             description = "VC TRG 오디오 리스트를 가져옵니다." )
     @GetMapping("/trg-audio")
     public ResponseDto trgAudioLoad(HttpSession session) {
-        Long memberId = (Long) session.getAttribute("member_id");
-        memberId = 1L;
+        if (session.getAttribute("memberId") == null) {
+            throw new BusinessException(ErrorCode.MEMBER_NOT_FOUND);
+        }
+
+        Long memberId = (Long) session.getAttribute("memberId");
+
         List<TrgAudioDto> trgAudioDtoList;
 
         if (memberId != null) {
@@ -93,9 +97,9 @@ public class VCViewController_team_multi {
     public ResponseDto saveVCProject(
             @RequestPart(value = "file", required = false) List<MultipartFile> files,
             @RequestPart("metadata") VCSaveDto vcSaveDto, HttpSession session) {
-        // 세션에 임의의 memberId 설정
+        // 세션에 memberId 설정
         if (session.getAttribute("memberId") == null) {
-            session.setAttribute("memberId", 1L);
+            throw new BusinessException(ErrorCode.MEMBER_NOT_FOUND);
         }
 
         Long memberId = (Long) session.getAttribute("memberId");
