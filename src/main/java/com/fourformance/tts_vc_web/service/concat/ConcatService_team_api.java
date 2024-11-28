@@ -12,6 +12,9 @@ import com.fourformance.tts_vc_web.repository.ConcatStatusHistoryRepository;
 import com.fourformance.tts_vc_web.repository.MemberRepository;
 import com.fourformance.tts_vc_web.service.common.S3Service;
 import lombok.RequiredArgsConstructor;
+import net.bramp.ffmpeg.FFmpeg;
+import net.bramp.ffmpeg.FFprobe;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,23 +39,50 @@ public class ConcatService_team_api {
     private final MemberRepository memberRepository; // 멤버 관련 저장소
 
     private static final Logger LOGGER = Logger.getLogger(ConcatService_team_api.class.getName());
-    private String uploadDir; // 업로드 디렉토리 경로
+
+    @Value("${upload.dir}")
+    private String uploadDir;
+
+    @Value("${ffmpeg.path}")
+    private String ffmpegPath;
 
     /**
-     * 서비스 초기화 메서드: 업로드 디렉토리를 생성합니다.
+     * 서비스 초기화 메서드: 업로드 디렉토리를 생성하고 FFmpeg 경로를 검증합니다.
      */
     @PostConstruct
     public void initialize() {
-        uploadDir = System.getProperty("user.home") + "/uploads";
+        // 업로드 디렉토리 생성
         File uploadFolder = new File(uploadDir);
-
-        // 디렉토리 존재 여부 확인 후 생성
         if (!uploadFolder.exists()) {
             if (!uploadFolder.mkdirs()) {
                 throw new RuntimeException("업로드 디렉토리를 생성할 수 없습니다: " + uploadDir);
             }
         }
         LOGGER.info("업로드 디렉토리가 설정되었습니다: " + uploadDir);
+
+        // FFmpeg 경로 검증
+        File ffmpegFile = new File(ffmpegPath);
+        if (!ffmpegFile.exists() || !ffmpegFile.canExecute()) {
+            throw new RuntimeException("FFmpeg 실행 파일을 찾을 수 없거나 실행 권한이 없습니다: " + ffmpegPath);
+        }
+        LOGGER.info("FFmpeg 경로가 설정되었습니다: " + ffmpegPath);
+
+        // FFmpeg 인스턴스 초기화 (예시)
+        setupFFmpeg();
+    }
+
+    /**
+     * FFmpeg 인스턴스 생성 (예시)
+     */
+    private void setupFFmpeg() {
+        try {
+            FFmpeg ffmpeg = new FFmpeg(ffmpegPath);
+            FFprobe ffprobe = new FFprobe(ffmpegPath.replace("ffmpeg", "ffprobe"));
+            // FFmpeg 및 FFprobe를 사용하는 로직 추가
+        } catch (IOException e) {
+            LOGGER.severe("FFmpeg 초기화 오류: " + e.getMessage());
+            throw new BusinessException(ErrorCode.FFMPEG_INITIALIZATION_FAILED);
+        }
     }
 
     /**
@@ -61,11 +91,11 @@ public class ConcatService_team_api {
      * @param concatRequestDto 요청 데이터 DTO
      * @return 병합 결과 DTO
      */
-    public ConcatResponseDto convertAllConcatDetails(ConcatRequestDto concatRequestDto) {
+    public ConcatResponseDto convertAllConcatDetails(ConcatRequestDto concatRequestDto, Long memberId) {
         LOGGER.info("convertAllConcatDetails 호출: " + concatRequestDto);
 
         // 1. 프로젝트 생성 또는 업데이트
-        ConcatProject concatProject = saveOrUpdateProject(concatRequestDto);
+        ConcatProject concatProject = saveOrUpdateProject(concatRequestDto, memberId);
 
         // 2. 응답 DTO 생성 및 초기화
         ConcatResponseDto concatResponseDto = initializeResponseDto(concatProject);
@@ -75,7 +105,7 @@ public class ConcatService_team_api {
             List<ConcatResponseDetailDto> responseDetails = processRequestDetails(concatRequestDto, concatProject);
 
             // 4. 병합된 오디오 생성 및 S3 업로드
-            String mergedFileUrl = mergeAudioFilesAndUploadToS3(responseDetails, uploadDir, concatRequestDto.getMemberId(), concatProject.getId());
+            String mergedFileUrl = mergeAudioFilesAndUploadToS3(responseDetails, uploadDir, memberId, concatProject.getId());
 
             // 응답 DTO에 데이터 설정
             concatResponseDto.setOutputConcatAudios(Collections.singletonList(mergedFileUrl));
@@ -184,21 +214,21 @@ public class ConcatService_team_api {
     /**
      * 프로젝트 생성 또는 업데이트
      */
-    private ConcatProject saveOrUpdateProject(ConcatRequestDto concatRequestDto) {
+    private ConcatProject saveOrUpdateProject(ConcatRequestDto concatRequestDto, Long memberId) {
         return Optional.ofNullable(concatRequestDto.getProjectId())
                 .map(projectId -> {
-                    updateProject(concatRequestDto);
+                    updateProject(concatRequestDto, memberId);
                     return concatProjectRepository.findById(projectId)
                             .orElseThrow(() -> new BusinessException(ErrorCode.NOT_EXISTS_PROJECT));
                 })
-                .orElseGet(() -> createNewProject(concatRequestDto));
+                .orElseGet(() -> createNewProject(concatRequestDto, memberId));
     }
 
     /**
      * 새로운 프로젝트 생성
      */
-    private ConcatProject createNewProject(ConcatRequestDto dto) {
-        Member member = memberRepository.findById(dto.getMemberId())
+    private ConcatProject createNewProject(ConcatRequestDto dto, Long memberId) {
+        Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
         ConcatProject concatProject = ConcatProject.createConcatProject(member, dto.getProjectName());
@@ -214,11 +244,11 @@ public class ConcatService_team_api {
     /**
      * 기존 프로젝트 업데이트
      */
-    private void updateProject(ConcatRequestDto dto) {
+    private void updateProject(ConcatRequestDto dto, Long memberId) {
         ConcatProject project = concatProjectRepository.findById(dto.getProjectId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_EXISTS_PROJECT));
 
-        if (!project.getMember().getId().equals(dto.getMemberId())) {
+        if (!project.getMember().getId().equals(memberId)) {
             throw new BusinessException(ErrorCode.MEMBER_PROJECT_NOT_MATCH);
         }
 

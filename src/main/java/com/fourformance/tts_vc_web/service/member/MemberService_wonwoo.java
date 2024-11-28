@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
-public class MemberService_team_api_wonwoo {
+public class MemberService_wonwoo {
     private final MemberRepository memberRepository;
 
 
@@ -81,6 +81,7 @@ public class MemberService_team_api_wonwoo {
                 .id(member.getId())
                 .email(member.getEmail())
                 .name(member.getName())
+                .phoneNumber(member.getPhoneNumber())
                 .updatedAt(member.getUpdatedAt())
                 .build();
     }

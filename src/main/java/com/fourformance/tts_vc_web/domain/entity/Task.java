@@ -11,7 +11,7 @@ import lombok.ToString;
 
 import java.time.LocalDateTime;
 
-@Entity(name = "task")
+@Entity
 @ToString
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
