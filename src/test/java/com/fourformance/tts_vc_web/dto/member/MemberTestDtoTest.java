@@ -19,7 +19,8 @@ class MemberTestDtoTest {
                 "네임",
                 0,
                 LocalDateTime.now(),
-                "010123123");
+                "010123123",
+                true);
 
         System.out.println("========= member = " + member);
 

@@ -111,12 +111,42 @@ public enum ErrorCode {
     INVALID_TEXT_FOR_EN(5062, HttpStatus.BAD_REQUEST, "언어 코드가 'en-US', 'en-GB', 'en-AU', 'en-IN'로 설정되었지만, 텍스트는 영어가 아닙니다."),
     VC_DETAIL_NOT_FOUND(5063, HttpStatus.NOT_FOUND, "VC 디테일을 찾을 수 없습니다."),
     FFMPEG_INITIALIZATION_FAILED(5064, HttpStatus.NOT_FOUND, "FFmpeg 초기화에 실패하였습니다."),
+    VC_PROJECT_NOT_FOUND(5065, HttpStatus.BAD_REQUEST, "VC 프로젝트를 찾을 수 없습니다."),
+    INTERNAL_SERVER_VC_ERROR(5066, HttpStatus.INTERNAL_SERVER_ERROR, "VC 처리 중 서버 오류가 발생했습니다."),
+    INVALID_REQUEST_FILE_DATA(5067, HttpStatus.BAD_REQUEST, "유효하지 않은 요청 파일 데이터입니다."),
 
     // 6000번대 코드 : 회원 서비스 예외
     PASSWORD_MISMATCH(6001, HttpStatus.BAD_REQUEST, "비밀번호가 일치하지 않습니다."),
     CURRENT_PASSWORD_MISMATCH(6002, HttpStatus.BAD_REQUEST, "현재 비밀번호가 일치하지 않습니다."),
     NEW_PASSWORD_MISMATCH(6003, HttpStatus.BAD_REQUEST, "새 비밀번호가 일치하지 않습니다."),
     SESSION_MEMBER_ID_NOT_SET(6004, HttpStatus.UNAUTHORIZED, "세션에 회원ID 값이 설정되지 않았습니다. 로그인을 먼저 진행해주세요."),
+    EMAIL_INVALID_FORMAT(6005, HttpStatus.BAD_REQUEST, "이메일 형식이 유효하지 않습니다."),
+    TOU_NOT_AGREED(6006, HttpStatus.BAD_REQUEST, "약관에 동의해야 회원가입이 가능합니다."),
+    PASSWORD_TOO_WEAK(6007, HttpStatus.BAD_REQUEST, "비밀번호는 대소문자, 숫자, 특수문자를 포함해야 합니다."),
+    SESSION_EXPIRED(6008, HttpStatus.UNAUTHORIZED, "세션이 만료되었습니다."),
+    INVALID_SESSION(6009, HttpStatus.UNAUTHORIZED, "유효하지 않은 세션입니다."),
+    SIGNUP_DUPLICATE_EMAIL(6010, HttpStatus.BAD_REQUEST, "이미 사용 중인 이메일입니다. 다른 이메일을 사용해주세요."),
+    SIGNUP_PASSWORD_MISMATCH(6011,HttpStatus.BAD_REQUEST,"비밀번호와 비밀번호 확인이 일치하지 않습니다." ),
+    EMAIL_MISSING(6012, HttpStatus.BAD_REQUEST, "이메일은 필수 입력 항목입니다."),
+    PHONE_NUMBER_MISSING(6013, HttpStatus.BAD_REQUEST, "전화번호는 필수 입력 항목입니다."),
+    EMAIL_AND_PHONE_NUMBER_MISSING(6014, HttpStatus.BAD_REQUEST, "이메일과 전화번호는 필수 입력 항목입니다."),
+    INVALID_EMAIL_FORMAT(6015, HttpStatus.BAD_REQUEST, "유효한 이메일 형식이 아닙니다."),
+    INVALID_PHONE_NUMBER_FORMAT(6016, HttpStatus.BAD_REQUEST, "유효한 전화번호 형식이 아닙니다."),
+    USER_NOT_FOUND(6017, HttpStatus.NOT_FOUND, "해당 정보를 가진 사용자가 존재하지 않습니다."),
+    EMAIL_PHONE_NUMBER_MISMATCH(6018, HttpStatus.BAD_REQUEST, "이메일과 전화번호가 일치하지 않습니다."),
+    INVALID_DATA_TYPE(6019, HttpStatus.BAD_REQUEST, "입력된 데이터 형식이 올바르지 않습니다."),
+    UNEXPECTED_FIELD_PRESENT(6020, HttpStatus.BAD_REQUEST, "허용되지 않은 필드가 포함되어 있습니다."),
+    EMAIL_EMPTY(6021, HttpStatus.BAD_REQUEST, "이메일은 비워둘 수 없습니다."),
+    PHONE_NUMBER_EMPTY(6022, HttpStatus.BAD_REQUEST, "전화번호는 비워둘 수 없습니다."),
+    INVALID_JSON_FORMAT(6023, HttpStatus.BAD_REQUEST, "요청 데이터의 형식이 올바르지 않습니다."),
+    EMAIL_NULL(6024, HttpStatus.BAD_REQUEST, "이메일은 비워둘 수 없습니다."),
+    PHONE_NUMBER_NULL(6025, HttpStatus.BAD_REQUEST, "전화번호는 비워둘 수 없습니다."),
+    NAME_MISSING(6026, HttpStatus.BAD_REQUEST, "이름은 필수 입력 항목입니다."),
+
+
+
+
+    SERVICE_UNAVAILABLE(7000, HttpStatus.SERVICE_UNAVAILABLE, "서비스를 사용할 수 없습니다. 잠시 후 다시 시도해주세요."),
 
 
     // 7000번대 코드 : 작업 큐 관련 예외
