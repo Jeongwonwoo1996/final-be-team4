@@ -1,9 +1,11 @@
 package com.fourformance.tts_vc_web.controller.vc;
 
+
+
 import com.fourformance.tts_vc_web.dto.response.DataResponseDto;
 import com.fourformance.tts_vc_web.dto.response.ResponseDto;
-import com.fourformance.tts_vc_web.dto.vc.VCSaveDto;
 import com.fourformance.tts_vc_web.dto.vc.VCDetailResDto;
+import com.fourformance.tts_vc_web.dto.vc.VCSaveRequestDto;
 import com.fourformance.tts_vc_web.service.vc.VCService_team_api;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -12,7 +14,10 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
@@ -35,7 +40,7 @@ public class VCController_team_api {
     /**
      * VC 프로젝트 처리 엔드포인트
      *
-     * @param vcSaveDto 프로젝트 저장 및 처리 요청 데이터
+     * @param VCSaveRequestDto 프로젝트 저장 및 처리 요청 데이터
      * @param files     소스 오디오 파일 리스트
      * @param session   현재 HTTP 세션 (회원 정보 저장)
      * @return VCDetailResDto의 리스트
@@ -48,7 +53,7 @@ public class VCController_team_api {
     })
     @PostMapping(value = "/process", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseDto processVCProject(
-            @RequestPart("vcSaveDto") VCSaveDto vcSaveDto,
+            @RequestPart("VCSaveRequestDto") VCSaveRequestDto VCSaveRequestDto,
             @RequestPart("files") List<MultipartFile> files,
             HttpSession session) {
         LOGGER.info("VC 프로젝트 처리 요청 시작");
@@ -58,7 +63,7 @@ public class VCController_team_api {
 
         try {
             // VC 프로젝트 처리
-            List<VCDetailResDto> response = vcService.processVCProject(vcSaveDto, files, memberId);
+            List<VCDetailResDto> response = vcService.processVCProject(VCSaveRequestDto, files, memberId);
 
             LOGGER.info("VC 프로젝트 처리 성공");
             return DataResponseDto.of(response);

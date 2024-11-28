@@ -153,8 +153,34 @@ public class VCService_team_multi {
         return vcProject.getId();
     }
 
+    // 메서드 오버로딩 - 재홍
+    public Long saveVCProject(VCSaveRequestDto vcSaveDto, List<MultipartFile> localFiles, Member member) {
+
+        memberAudioMetaRepository.resetSelection(AudioType.VC_TRG);
+
+        // 1. VCProject 생성/업데이트
+        VCProject vcProject = vcSaveDto.getProjectId() == null
+                ? createNewVCProject(vcSaveDto, member)
+                : updateExistingVCProject(vcSaveDto); // member는 안넘겨도 될 것 같음
+
+        // 2. 타겟 파일 처리
+        processFiles(vcSaveDto.getTrgFiles(), localFiles, vcProject, AudioType.VC_TRG);
+
+        // 3. 소스 파일 처리
+        processFiles(vcSaveDto.getSrcFiles(), localFiles, vcProject, AudioType.VC_SRC);
+
+        return vcProject.getId();
+    }
+
     // VCProject 생성, 저장
     private VCProject createNewVCProject(VCSaveDto vcSaveDto, Member member) {
+
+        VCProject vcProject = VCProject.createVCProject(member, vcSaveDto.getProjectName());
+        vcProjectRepository.save(vcProject);
+        return vcProject;
+    }
+    // 메서드 오버로딩 - 재홍
+    private VCProject createNewVCProject(VCSaveRequestDto vcSaveDto, Member member) {
 
         VCProject vcProject = VCProject.createVCProject(member, vcSaveDto.getProjectName());
         vcProjectRepository.save(vcProject);
@@ -163,6 +189,16 @@ public class VCService_team_multi {
 
     //VCProject 업데이트
     private VCProject updateExistingVCProject(VCSaveDto vcSaveDto) {
+        VCProject vcProject = vcProjectRepository.findById(vcSaveDto.getProjectId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_EXISTS_PROJECT));
+
+        vcProject.updateVCProject(vcSaveDto.getProjectName(), null);
+
+        return vcProject;
+    }
+
+    //메서드 오버로딩 - 재홍
+    private VCProject updateExistingVCProject(VCSaveRequestDto vcSaveDto) {
         VCProject vcProject = vcProjectRepository.findById(vcSaveDto.getProjectId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_EXISTS_PROJECT));
 
@@ -219,6 +255,8 @@ public class VCService_team_multi {
             }
         }
     }
+
+
     private MultipartFile findMultipartFileByName(List<MultipartFile> files, String localFileName) {
         return files.stream()
                 .filter(file -> file.getOriginalFilename().equals(localFileName))
