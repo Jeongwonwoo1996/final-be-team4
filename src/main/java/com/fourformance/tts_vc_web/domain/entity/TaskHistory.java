@@ -10,10 +10,11 @@ import lombok.ToString;
 
 import java.time.LocalDateTime;
 
-@Entity(name = "task_history")
+@Entity
 @ToString
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Table(name = "task_history")
 public class TaskHistory extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
