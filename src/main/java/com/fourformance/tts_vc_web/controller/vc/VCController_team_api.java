@@ -1,7 +1,7 @@
 package com.fourformance.tts_vc_web.controller.vc;
 
-
-
+import com.fourformance.tts_vc_web.common.exception.common.BusinessException;
+import com.fourformance.tts_vc_web.common.exception.common.ErrorCode;
 import com.fourformance.tts_vc_web.dto.response.DataResponseDto;
 import com.fourformance.tts_vc_web.dto.response.ResponseDto;
 import com.fourformance.tts_vc_web.dto.vc.VCDetailResDto;
@@ -47,9 +47,7 @@ public class VCController_team_api {
      */
     @Operation(summary = "VC 프로젝트 처리", description = "소스/타겟 오디오 파일 처리 및 Voice ID 생성")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "VC 프로젝트 처리 성공"),
-            @ApiResponse(responseCode = "400", description = "잘못된 요청 데이터"),
-            @ApiResponse(responseCode = "500", description = "서버 내부 오류")
+            @ApiResponse(responseCode = "200", description = "VC 프로젝트 처리 성공")
     })
     @PostMapping(value = "/process", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseDto processVCProject(
@@ -58,8 +56,16 @@ public class VCController_team_api {
             HttpSession session) {
         LOGGER.info("VC 프로젝트 처리 요청 시작");
 
-        // 세션에서 memberId 가져오기 (하드코딩된 값 사용)
-        Long memberId = getOrSetMemberIdInSession(session);
+        // 세션에 memberId 값이 설정되지 않았다면 예외 처리
+        if (session.getAttribute("memberId") == null) {
+            throw new BusinessException(ErrorCode.SESSION_MEMBER_ID_NOT_SET);
+        }
+
+        // 세션에서 memberId 가져오기
+        Long memberId = (Long) session.getAttribute("memberId");
+
+        // 요청 데이터 유효성 검사
+        validateRequestData(VCSaveRequestDto);
 
         try {
             // VC 프로젝트 처리
@@ -68,29 +74,32 @@ public class VCController_team_api {
             LOGGER.info("VC 프로젝트 처리 성공");
             return DataResponseDto.of(response);
 
+        } catch (BusinessException e) {
+            // 비즈니스 로직 예외 처리
+            LOGGER.log(Level.WARNING, "비즈니스 예외 발생", e);
+            throw e;
         } catch (Exception e) {
-            // 예외 처리 및 로그 기록
-            LOGGER.log(Level.SEVERE, "VC 프로젝트 처리 중 오류 발생", e);
-            throw e; // 예외를 다시 던져 글로벌 예외 처리로 전달
+            // 시스템 예외 처리
+            LOGGER.log(Level.SEVERE, "VC 프로젝트 처리 중 시스템 예외 발생", e);
+            throw new BusinessException(ErrorCode.INTERNAL_SERVER_VC_ERROR);
         }
     }
 
     /**
-     * 세션에서 memberId를 가져오거나 하드코딩된 값을 설정합니다.
+     * 요청 데이터 유효성 검사
      *
-     * @param session 현재 HTTP 세션
-     * @return 회원 ID
+     * @param vcSaveRequestDto 요청 데이터
+     * @throws BusinessException 잘못된 요청 데이터인 경우 예외 발생
      */
-    private Long getOrSetMemberIdInSession(HttpSession session) {
-        // 세션에 memberId가 없으면 하드코딩된 값을 설정
-        if (session.getAttribute("memberId") == null) {
-            session.setAttribute("memberId", 1L); // 하드코딩된 회원 ID
-            LOGGER.info("세션에 하드코딩된 memberId 설정: 1");
+    private void validateRequestData(VCSaveRequestDto vcSaveRequestDto) {
+        if (vcSaveRequestDto == null) {
+            LOGGER.warning("요청 데이터가 null입니다.");
+            throw new BusinessException(ErrorCode.INVALID_REQUEST_DATA);
         }
-
-        // 세션에서 memberId 가져오기
-        Long memberId = (Long) session.getAttribute("memberId");
-        LOGGER.info("현재 세션 memberId: " + memberId);
-        return memberId;
+        if (vcSaveRequestDto.getTrgFiles() == null || vcSaveRequestDto.getTrgFiles().isEmpty()) {
+            LOGGER.warning("요청 데이터에 타겟 오디오 파일이 없습니다.");
+            throw new BusinessException(ErrorCode.INVALID_REQUEST_FILE_DATA);
+        }
+        LOGGER.info("요청 데이터 유효성 검사 통과");
     }
 }

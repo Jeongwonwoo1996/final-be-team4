@@ -111,6 +111,9 @@ public enum ErrorCode {
     INVALID_TEXT_FOR_EN(5062, HttpStatus.BAD_REQUEST, "언어 코드가 'en-US', 'en-GB', 'en-AU', 'en-IN'로 설정되었지만, 텍스트는 영어가 아닙니다."),
     VC_DETAIL_NOT_FOUND(5063, HttpStatus.NOT_FOUND, "VC 디테일을 찾을 수 없습니다."),
     FFMPEG_INITIALIZATION_FAILED(5064, HttpStatus.NOT_FOUND, "FFmpeg 초기화에 실패하였습니다."),
+    VC_PROJECT_NOT_FOUND(5065, HttpStatus.BAD_REQUEST, "VC 프로젝트를 찾을 수 없습니다."),
+    INTERNAL_SERVER_VC_ERROR(5066, HttpStatus.INTERNAL_SERVER_ERROR, "VC 처리 중 서버 오류가 발생했습니다."),
+    INVALID_REQUEST_FILE_DATA(5067, HttpStatus.BAD_REQUEST, "유효하지 않은 요청 파일 데이터입니다."),
 
     // 6000번대 코드 : 회원 서비스 예외
     PASSWORD_MISMATCH(6001, HttpStatus.BAD_REQUEST, "비밀번호가 일치하지 않습니다."),
