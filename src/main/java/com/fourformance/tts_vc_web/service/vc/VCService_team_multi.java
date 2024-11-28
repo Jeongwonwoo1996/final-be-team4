@@ -89,19 +89,21 @@ public class VCService_team_multi {
     // VCDetail 엔티티를 VCDetailResDto로 변환하는 메서드
     private VCDetailLoadDto convertToVCDetailResDto(VCDetail vcDetail) {
 
-        // src 오디오 url 추가하기
+        // 생성된 오디오 url 추가하기
         List<GeneratedAudioDto> audioUrls = outputAudioMetaRepository.findAudioUrlsByVcDetail(vcDetail.getId())
                 .stream() // List<OutputAudioMeta>를 Stream으로 변환
                 .filter(meta -> meta.getAudioUrl() != null) // audioUrl이 null이 아닌 경우만 필터링
                 .map(meta -> new GeneratedAudioDto(meta.getId(), meta.getAudioUrl())) // OutputAudioMeta의 id와 audioUrl을 GeneratedAudioDto로 매핑
                 .collect(Collectors.toList()); // Stream 결과를 List<GeneratedAudioDto>로 변환
 
+        String srcUrl = memberAudioMetaRepository.findAudioUrlsByAudioMetaIds(vcDetail.getMemberAudioMeta().getId(), AudioType.VC_SRC);
 
         VCDetailLoadDto resDto = new VCDetailLoadDto();
                        resDto.setId(vcDetail.getId());
                        resDto.setProjectId(vcDetail.getVcProject().getId());
                        resDto.setIsChecked(vcDetail.getIsChecked());
                        resDto.setUnitScript(vcDetail.getUnitScript());
+                       resDto.setSrcAudio(srcUrl);
                        resDto.setGenAudios(audioUrls);
         return resDto;
     }
