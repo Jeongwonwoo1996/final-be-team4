@@ -5,7 +5,7 @@ import com.fourformance.tts_vc_web.common.exception.common.ErrorCode;
 import com.fourformance.tts_vc_web.dto.member.*;
 import com.fourformance.tts_vc_web.dto.response.DataResponseDto;
 import com.fourformance.tts_vc_web.dto.response.ResponseDto;
-import com.fourformance.tts_vc_web.service.member.MemberService_team_api_wonwoo;
+import com.fourformance.tts_vc_web.service.member.MemberService_wonwoo;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -18,9 +18,9 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/member")
 @RequiredArgsConstructor
 @Tag(name = "Member Controller", description = "회원 관리와 관련된 작업")
-public class MemberController_team_api_wonwoo {
+public class MemberController_wonwoo {
 
-    private final MemberService_team_api_wonwoo memberService;
+    private final MemberService_wonwoo memberService;
 
     /**
      * 회원 로그인
