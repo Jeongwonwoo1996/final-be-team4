@@ -22,21 +22,22 @@ public class ExportListDto {
     String fileName;
     String script;
     String unitStatus;
-    String downloadLink; // generatedPresignedUrL로 만들어전달 // 버킷 루트로 전달예정.
-    LocalDateTime updateAt;
+    String url; // generatedPresignedUrL로 만들어전달 // 버킷 루트로 전달예정.
+    LocalDateTime createAt;
+
     @JsonIgnore
-    private String bucketRoute; // 내부적으로 presigned URL 생성을 위해 사용, JSON에는 노출되지 않음
+    String bucketRoute;
 
     public ExportListDto(Long outputAudioMetaId, String projectType, String projectName, String fileName, String script,
-                         String unitStatus, LocalDateTime updateAt, String downloadLink) {
+                         String unitStatus, LocalDateTime createAt, String url) {
         this.outputAudioMetaId = outputAudioMetaId;
         this.projectType = projectType;
         this.projectName = projectName;
         this.fileName = fileName;
         this.script = script;
         this.unitStatus = unitStatus;
-        this.updateAt = updateAt;
-        this.downloadLink = downloadLink;
+        this.createAt = createAt;
+        this.url = url;
 
     }
 }

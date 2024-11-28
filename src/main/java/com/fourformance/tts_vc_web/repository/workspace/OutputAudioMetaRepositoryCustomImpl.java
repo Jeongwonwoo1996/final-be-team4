@@ -9,6 +9,9 @@ import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.persistence.EntityManager;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 import java.util.List;
 
@@ -117,7 +120,7 @@ public class OutputAudioMetaRepositoryCustomImpl implements OutputAudioMetaRepos
                                 concatProject.projectName.coalesce(ttsProject.projectName, vcProject.projectName),
                                 Expressions.stringTemplate(
                                         "SUBSTRING({0}, LOCATE('/', REVERSE({0})) + 1)",
-                                        outputAudioMeta.bucketRoute
+                                        outputAudioMeta.audioUrl
                                 ), // 파일명 추출
                                 concatDetail.unitScript.coalesce(ttsDetail.unitScript, vcDetail.unitScript),
                                 JPAExpressions.select(apiStatus.apiUnitStatusConst.stringValue())
@@ -145,5 +148,100 @@ public class OutputAudioMetaRepositoryCustomImpl implements OutputAudioMetaRepos
                 .fetch();
 
         return outputAudioMetas;
+    }
+
+    @Override
+    public Page<ExportListDto> findExportHistoryBySearchCriteria(Long memberId, String keyword, Pageable pageable) {
+        BooleanBuilder whereClause = new BooleanBuilder();
+
+        // 멤버 조건 추가
+        BooleanBuilder memberCondition = new BooleanBuilder();
+        memberCondition.or(
+                ttsDetail.isNotNull()
+                        .and(ttsProject.isNotNull())
+                        .and(ttsMember.isNotNull())
+                        .and(ttsMember.id.eq(memberId))
+        );
+        memberCondition.or(
+                vcDetail.isNotNull()
+                        .and(vcProject.isNotNull())
+                        .and(vcMember.isNotNull())
+                        .and(vcMember.id.eq(memberId))
+        );
+        memberCondition.or(
+                concatProject.isNotNull()
+                        .and(concatMember.isNotNull())
+                        .and(concatMember.id.eq(memberId))
+        );
+
+        whereClause.and(memberCondition);
+        whereClause.and(outputAudioMeta.isDeleted.isFalse());
+
+        // 키워드 조건 추가
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            BooleanBuilder keywordConditions = new BooleanBuilder();
+            keywordConditions.or(ttsProject.projectName.containsIgnoreCase(keyword));
+            keywordConditions.or(vcProject.projectName.containsIgnoreCase(keyword));
+            keywordConditions.or(concatProject.projectName.containsIgnoreCase(keyword));
+            keywordConditions.or(
+                    Expressions.stringTemplate(
+                            "SUBSTRING({0}, LOCATE('/', {0}) + 1)",
+                            outputAudioMeta.bucketRoute
+                    ).containsIgnoreCase(keyword)
+            );
+
+            whereClause.and(keywordConditions);
+        }
+
+        // 전체 개수 조회
+        long total = queryFactory.select(outputAudioMeta.countDistinct())
+                .from(outputAudioMeta)
+                .leftJoin(outputAudioMeta.ttsDetail, ttsDetail)
+                .leftJoin(ttsDetail.ttsProject, ttsProject)
+                .leftJoin(ttsProject.member, ttsMember)
+                .leftJoin(outputAudioMeta.vcDetail, vcDetail)
+                .leftJoin(vcDetail.vcProject, vcProject)
+                .leftJoin(vcProject.member, vcMember)
+                .leftJoin(outputAudioMeta.concatProject, concatProject)
+                .leftJoin(concatProject.member, concatMember)
+                .where(whereClause)
+                .fetchOne();
+
+        // 페이징된 데이터 조회
+        List<ExportListDto> results = queryFactory.select(
+                        Projections.constructor(ExportListDto.class,
+                                outputAudioMeta.id,
+                                outputAudioMeta.projectType.stringValue(),
+                                concatProject.projectName.coalesce(ttsProject.projectName, vcProject.projectName),
+                                Expressions.stringTemplate(
+                                        "SUBSTRING_INDEX({0}, '/', -1)",
+                                        outputAudioMeta.audioUrl
+                                ), // 파일명 추출
+                                concatDetail.unitScript.coalesce(ttsDetail.unitScript, vcDetail.unitScript),
+                                apiStatus.apiUnitStatusConst.stringValue(), // 최신 상태 직접 조인 후 가져오기
+                                outputAudioMeta.createdAt,
+                                outputAudioMeta.bucketRoute
+                        )
+                )
+                .from(outputAudioMeta)
+                .leftJoin(outputAudioMeta.ttsDetail, ttsDetail)
+                .leftJoin(ttsDetail.ttsProject, ttsProject)
+                .leftJoin(ttsProject.member, ttsMember)
+                .leftJoin(outputAudioMeta.vcDetail, vcDetail)
+                .leftJoin(vcDetail.vcProject, vcProject)
+                .leftJoin(vcProject.member, vcMember)
+                .leftJoin(outputAudioMeta.concatProject, concatProject)
+                .leftJoin(concatProject.member, concatMember)
+                .leftJoin(concatDetail).on(concatDetail.concatProject.id.eq(concatProject.id))
+                .leftJoin(apiStatus).on(apiStatus.ttsDetail.eq(ttsDetail).or(apiStatus.vcDetail.eq(vcDetail))) // APIStatus와 조인
+                .where(whereClause)
+                .orderBy(outputAudioMeta.createdAt.desc())
+                .offset(pageable.getOffset())
+                .limit(pageable.getPageSize())
+                .fetch();
+
+
+        // Page 객체로 반환
+        return new PageImpl<>(results, pageable, total);
     }
 }
