@@ -31,7 +31,7 @@ class MultiJobLogRepositoryTest {
 
     //member 생성
     public Member createMember() {
-        return Member.createMember("test2@email.com", "12345", "오길동", 0, LocalDateTime.now(), "01012345678");
+        return Member.createMember("test2@email.com", "12345", "오길동", 0, LocalDateTime.now(), "01012345678",true);
     }
     // VCProject 생성
     public VCProject createVCProject(Member member) {
