@@ -3,134 +3,147 @@ package com.fourformance.tts_vc_web.repository.workspace;
 import com.fourformance.tts_vc_web.domain.entity.*;
 import com.fourformance.tts_vc_web.dto.workspace.ExportListDto;
 import com.fourformance.tts_vc_web.service.common.S3Service;
-import com.fourformance.tts_vc_web.service.workspace.WorkspaceService;
+import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.JPAExpressions;
-import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.persistence.EntityManager;
-import com.querydsl.core.BooleanBuilder;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.Pageable;
-
+import org.springframework.stereotype.Repository;
 import java.util.List;
-import java.util.stream.Collectors;
 
+@Repository
 public class OutputAudioMetaRepositoryCustomImpl implements OutputAudioMetaRepositoryCustom {
 
-    private JPAQueryFactory queryFactory;
+    private final JPAQueryFactory queryFactory;
 
-    private WorkspaceService workspaceService;
+    // Q-타입 인스턴스
+    private final QTTSProject ttsProject = QTTSProject.tTSProject;
+    private final QVCProject vcProject = QVCProject.vCProject;
+    private final QOutputAudioMeta outputAudioMeta = QOutputAudioMeta.outputAudioMeta;
+    private final QTTSDetail ttsDetail = QTTSDetail.tTSDetail;
+    private final QVCDetail vcDetail = QVCDetail.vCDetail;
+    private final QConcatProject concatProject = QConcatProject.concatProject;
+    private final QConcatDetail concatDetail = QConcatDetail.concatDetail;
+    private final QAPIStatus apiStatus = QAPIStatus.aPIStatus;
+
+    // 각 프로젝트의 멤버를 위한 QMember 인스턴스
+    private final QMember ttsMember = new QMember("ttsMember");
+    private final QMember vcMember = new QMember("vcMember");
+    private final QMember concatMember = new QMember("concatMember");
 
     public OutputAudioMetaRepositoryCustomImpl(EntityManager em) {
         this.queryFactory = new JPAQueryFactory(em);
     }
 
-    QProject project = QProject.project;
-    QTTSProject ttsProject = QTTSProject.tTSProject;
-    QVCProject vcProject = QVCProject.vCProject;
-    QConcatProject concatProject = QConcatProject.concatProject;
-    QTTSDetail ttsDetail = QTTSDetail.tTSDetail;
-    QVCDetail vcDetail = QVCDetail.vCDetail;
-    QConcatDetail concatDetail = QConcatDetail.concatDetail;
-    QOutputAudioMeta outputAudioMeta = QOutputAudioMeta.outputAudioMeta;
-    QAPIStatus apiStatus = QAPIStatus.aPIStatus;
-
-
-    public List<ExportListDto> findExportHistoryBySearchCriteria(Long memberId, String keyword){
+    @Override
+    public List<ExportListDto> findExportHistoryBySearchCriteria(Long memberId, String keyword) {
         BooleanBuilder whereClause = new BooleanBuilder();
-        whereClause.and(outputAudioMeta.ttsDetail.ttsProject.member.id.eq(memberId))
-                .or(outputAudioMeta.vcDetail.vcProject.member.id.eq(memberId))
-                .or(outputAudioMeta.concatProject.member.id.eq(memberId));
-        whereClause.and(outputAudioMeta.isDeleted.isFalse()); // 삭제되지않은 히스토리 기준
 
+        // 멤버 조건 추가 (null 체크 포함)
+        BooleanBuilder memberCondition = new BooleanBuilder();
+        memberCondition.or(
+                ttsDetail.isNotNull()
+                        .and(ttsProject.isNotNull())
+                        .and(ttsMember.isNotNull())
+                        .and(ttsMember.id.eq(memberId))
+        );
+        memberCondition.or(
+                vcDetail.isNotNull()
+                        .and(vcProject.isNotNull())
+                        .and(vcMember.isNotNull())
+                        .and(vcMember.id.eq(memberId))
+        );
+        memberCondition.or(
+                concatProject.isNotNull()
+                        .and(concatMember.isNotNull())
+                        .and(concatMember.id.eq(memberId))
+        );
 
+        whereClause.and(memberCondition);
+        whereClause.and(outputAudioMeta.isDeleted.isFalse()); // 삭제되지 않은 히스토리 기준
 
         if (keyword != null && !keyword.trim().isEmpty()) {
             BooleanBuilder keywordConditions = new BooleanBuilder();
-            //각 프로젝트명
-            keywordConditions.or(outputAudioMeta.ttsDetail.ttsProject.projectName.containsIgnoreCase(keyword));
-            keywordConditions.or(outputAudioMeta.vcDetail.vcProject.projectName.containsIgnoreCase(keyword));
-            keywordConditions.or(outputAudioMeta.concatProject.projectName.containsIgnoreCase(keyword));
+            // 각 프로젝트명
+            keywordConditions.or(ttsProject.projectName.containsIgnoreCase(keyword));
+            keywordConditions.or(vcProject.projectName.containsIgnoreCase(keyword));
+            keywordConditions.or(concatProject.projectName.containsIgnoreCase(keyword));
 
-            // 각 프로젝트의 파일명
-            keywordConditions.or(
-                    Expressions.stringTemplate(
-                            "substring({0}, locate('/', reverse({0})) + 1)",
-                            outputAudioMeta.bucketRoute
-                    ).containsIgnoreCase(keyword)
-            );
-            // 각 프로젝트의 상태(응답기준 최신상태)
+            // 파일명 추출 및 필터링 (대소문자 무시)
+//            keywordConditions.or(
+//                    Expressions.stringTemplate(
+//                            "LOWER(SUBSTRING({0}, LOCATE('/', REVERSE({0})) + 1)) LIKE {1}",
+//                            outputAudioMeta.bucketRoute,
+//                            "%" + keyword.toLowerCase() + "%"
+//                    )
+//            );
+
+            // 최신 상태 필터링 (LOWER + LIKE 사용)
             keywordConditions.or(
                     Expressions.booleanTemplate(
-                            "lower({0}) like {1}",
+                            "LOWER({0}) LIKE {1}",
                             JPAExpressions.select(apiStatus.apiUnitStatusConst.stringValue())
                                     .from(apiStatus)
-                                    .where(apiStatus.ttsDetail.eq(ttsDetail))
+                                    .where(apiStatus.ttsDetail.eq(ttsDetail)
+                                            .or(apiStatus.vcDetail.eq(vcDetail)))
                                     .orderBy(apiStatus.responseAt.desc())
                                     .limit(1),
-                            Expressions.constant("%" + keyword.toLowerCase() + "%")
+                            "%" + keyword.toLowerCase() + "%"
                     )
             );
 
-            // 각 프로젝트의 스크립트
-            keywordConditions.or(outputAudioMeta.ttsDetail.unitScript.containsIgnoreCase(keyword));
-            keywordConditions.or(outputAudioMeta.vcDetail.unitScript.containsIgnoreCase(keyword));
-//            keywordConditions.or(outputAudioMeta.concatProject) // unitScript 뽑아내기.
+            // 스크립트 필터링
+            keywordConditions.or(ttsDetail.unitScript.containsIgnoreCase(keyword));
+            keywordConditions.or(vcDetail.unitScript.containsIgnoreCase(keyword));
             keywordConditions.or(
                     concatDetail.unitScript.containsIgnoreCase(keyword)
-                            .and(concatDetail.concatProject.eq(outputAudioMeta.concatProject))
-            ); // concatDetail의 ConcatProject와 outputaudioMeta의 CocnatProject를 ..
+                            .and(concatDetail.concatProject.eq(concatProject))
+            );
 
-            // 프로젝트 타입
-            keywordConditions.or(outputAudioMeta.ttsDetail.ttsProject.projectType.containsIgnoreCase(keyword));
-            keywordConditions.or(outputAudioMeta.vcDetail.vcProject.projectType.containsIgnoreCase(keyword));
-            keywordConditions.or(outputAudioMeta.concatProject.projectType.containsIgnoreCase(keyword));
+            // 프로젝트 타입 필터링
+            keywordConditions.or(ttsProject.projectType.containsIgnoreCase(keyword));
+            keywordConditions.or(vcProject.projectType.containsIgnoreCase(keyword));
+            keywordConditions.or(concatProject.projectType.containsIgnoreCase(keyword));
 
-
-
+            whereClause.and(keywordConditions);
         }
+
+        // 쿼리 작성
         List<ExportListDto> outputAudioMetas = queryFactory.select(
                         Projections.constructor(ExportListDto.class,
-                                outputAudioMeta.projectType,
-                                concatProject.projectName.coalesce(ttsDetail.ttsProject.projectName, vcDetail.vcProject.projectName),
+                                outputAudioMeta.id,
+                                outputAudioMeta.projectType.stringValue(),
+                                concatProject.projectName.coalesce(ttsProject.projectName, vcProject.projectName),
                                 Expressions.stringTemplate(
-                                        "substring({0}, locate('/', reverse({0})) + 1)",
+                                        "SUBSTRING({0}, LOCATE('/', REVERSE({0})) + 1)",
                                         outputAudioMeta.bucketRoute
                                 ), // 파일명 추출
                                 concatDetail.unitScript.coalesce(ttsDetail.unitScript, vcDetail.unitScript),
-                                JPAExpressions.select(apiStatus.apiUnitStatusConst)
+                                JPAExpressions.select(apiStatus.apiUnitStatusConst.stringValue())
                                         .from(apiStatus)
                                         .where(apiStatus.ttsDetail.eq(ttsDetail)
                                                 .or(apiStatus.vcDetail.eq(vcDetail)))
                                         .orderBy(apiStatus.responseAt.desc())
-                                        .limit(1), // 최신 상태의 1개 status 받기
-                                outputAudioMeta.createdAt, // 생성날짜 기준
-                                outputAudioMeta.audioUrl // 오디오 url
+                                        .limit(1), // 최신 상태
+                                outputAudioMeta.createdAt, // 생성 날짜
+//                                outputAudioMeta.audioUrl, // 오디오 URL
+                                outputAudioMeta.bucketRoute // 버킷루트 추가
                         )
                 )
                 .from(outputAudioMeta)
                 .leftJoin(outputAudioMeta.ttsDetail, ttsDetail)
+                .leftJoin(ttsDetail.ttsProject, ttsProject)
+                .leftJoin(ttsProject.member, ttsMember) // TTS 멤버 조인
                 .leftJoin(outputAudioMeta.vcDetail, vcDetail)
+                .leftJoin(vcDetail.vcProject, vcProject)
+                .leftJoin(vcProject.member, vcMember) // VC 멤버 조인
                 .leftJoin(outputAudioMeta.concatProject, concatProject)
-                .leftJoin(concatDetail).on(concatDetail.concatProject.eq(outputAudioMeta.concatProject)) // ConcatDetail 조인
+                .leftJoin(concatProject.member, concatMember) // CONCAT 멤버 조인
+                .leftJoin(concatDetail).on(concatDetail.concatProject.id.eq(concatProject.id)) // ConcatDetail 조인 (단방향)
                 .where(whereClause)
                 .fetch();
-        List<ExportListDto> dtos = outputAudioMetas.stream()
-                .map(o -> new ExportListDto(
-                        o.getProjectType(),
-                        o.getProjectName(),
-                        o.getFileName(),
-                        o.getScript(),
-                        o.getUnitStatus(),
-                        o.getUpdateAt(),
-                        o.getDownloadLink()// audioPath 전달
-                         // S3Service를 전달하여 presigned URL 생성
-                ))
-                .collect(Collectors.toList());
-        return dtos;
-    }
 
+        return outputAudioMetas;
+    }
 }
