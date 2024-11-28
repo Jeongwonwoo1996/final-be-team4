@@ -9,10 +9,7 @@ import com.fourformance.tts_vc_web.common.util.GoogleTTSClient;
 import com.fourformance.tts_vc_web.domain.entity.APIStatus;
 import com.fourformance.tts_vc_web.domain.entity.TTSDetail;
 import com.fourformance.tts_vc_web.domain.entity.TTSProject;
-import com.fourformance.tts_vc_web.dto.tts.TTSDetailDto;
-import com.fourformance.tts_vc_web.dto.tts.TTSResponseDetailDto;
-import com.fourformance.tts_vc_web.dto.tts.TTSResponseDto;
-import com.fourformance.tts_vc_web.dto.tts.TTSSaveDto;
+import com.fourformance.tts_vc_web.dto.tts.*;
 import com.fourformance.tts_vc_web.repository.APIStatusRepository;
 import com.fourformance.tts_vc_web.repository.TTSDetailRepository;
 import com.fourformance.tts_vc_web.repository.TTSProjectRepository;
@@ -41,26 +38,24 @@ public class TTSService_team_api {
     private final VoiceStyleRepository voiceStyleRepository;
     private final TTSService_team_multi ttsServiceTeamMulti; // 통합 서비스 호출을 위한 클래스
     private final S3Service s3Service; // S3 파일 업로드를 처리하는 서비스
-
-    // GoogleTTSClient 주입
-    private final GoogleTTSClient googleTTSClient;
+    private final GoogleTTSClient googleTTSClient; // GoogleTTSClient 주입
 
     private static final Logger LOGGER = Logger.getLogger(TTSService_team_api.class.getName()); // 로그 기록을 위한 Logger
 
     /**
      * 모든 TTS 디테일 처리: 데이터를 생성 또는 업데이트하고 오디오 파일을 생성.
      *
-     * @param ttsSaveDto 프로젝트와 디테일 데이터를 포함한 DTO
+     * @param ttsRequestDto 프로젝트와 디테일 데이터를 포함한 DTO
      * @return 생성된 오디오 파일 경로 리스트
      */
-    public TTSResponseDto convertAllTtsDetails(TTSSaveDto ttsSaveDto, Long memberId) {
-        LOGGER.info("convertAllTtsDetails 호출: " + ttsSaveDto);
+    public TTSResponseDto convertAllTtsDetails(TTSRequestDto ttsRequestDto, Long memberId) {
+        LOGGER.info("convertAllTtsDetails 호출: " + ttsRequestDto);
 
         // 1. 프로젝트 저장 또는 업데이트
-        TTSProject ttsProject = saveOrUpdateProject(ttsSaveDto, memberId);
+        TTSProject ttsProject = saveOrUpdateProject(ttsRequestDto, memberId);
 
         // 2. 응답 DTO 생성 및 초기화
-        TTSResponseDto ttsResponseDto = TTSResponseDto.builder()
+        TTSResponseDto.TTSResponseDtoBuilder responseBuilder = TTSResponseDto.builder()
                 .projectId(ttsProject.getId())
                 .projectName(ttsProject.getProjectName())
                 .globalVoiceStyleId(ttsProject.getVoiceStyle().getId())
@@ -68,27 +63,30 @@ public class TTSService_team_api {
                 .globalSpeed(ttsProject.getGlobalSpeed())
                 .globalPitch(ttsProject.getGlobalPitch())
                 .globalVolume(ttsProject.getGlobalVolume())
-                .apiStatus(ttsProject.getApiStatus())
-                .build();
+                .apiStatus(APIStatusConst.IN_PROGRESS)
+                .ttsDetails(new ArrayList<>());
 
         // 프로젝트의 TTS 디테일 데이터 처리
         List<TTSResponseDetailDto> responseDetails = new ArrayList<>();
 
-        for (TTSDetailDto detailDto : ttsSaveDto.getTtsDetails()) {
+        int successCount = 0;
+        int failureCount = 0;
+
+        for (TTSRequestDetailDto ttsRequestDetailDto : ttsRequestDto.getTtsDetails()) {
             // 디테일 데이터 저장 또는 업데이트
-            TTSDetail ttsDetail = saveOrUpdateDetail(detailDto, ttsProject);
+            TTSDetail ttsDetail = saveOrUpdateDetail(ttsRequestDetailDto, ttsProject);
 
             try {
-                LOGGER.info("TTSDetail 처리 시작: " + detailDto);
+                LOGGER.info("TTSDetail 처리 시작: " + ttsRequestDetailDto);
                 // 디테일 처리 및 오디오 파일 경로 저장
 
-                Map<String, String> fileUrlMap = processTtsDetail(detailDto, ttsProject);
+                Map<String, String> fileUrlMap = processTtsDetail(ttsRequestDetailDto, ttsProject);
                 String fileUrl = fileUrlMap.get("fileUrl");
 
                 // TTSResponseDetailDto 생성 및 추가
                 TTSResponseDetailDto responseDetail = TTSResponseDetailDto.builder()
                         .id(ttsDetail.getId())
-                        .ProjectId(ttsProject.getId())
+                        .projectId(ttsProject.getId())
                         .unitScript(ttsDetail.getUnitScript())
                         .unitSpeed(ttsDetail.getUnitSpeed())
                         .unitPitch(ttsDetail.getUnitPitch())
@@ -97,46 +95,66 @@ public class TTSService_team_api {
                         .unitSequence(ttsDetail.getUnitSequence())
                         .UnitVoiceStyleId(ttsDetail.getVoiceStyle().getId())
                         .fileUrl(fileUrl) // 처리된 URL 삽입
+                        .apiUnitStatus(APIUnitStatusConst.SUCCESS)
                         .build();
 
                 responseDetails.add(responseDetail);
-                LOGGER.info("TTSDetail 처리 완료: " + detailDto);
+                successCount++;
+                LOGGER.info("TTSDetail 처리 완료: " + ttsRequestDetailDto);
 
-            } catch (Exception e) {
-                LOGGER.severe("TTSDetail 처리 중 오류 발생: " + detailDto + ", 메시지: " + e.getMessage());
-                // 디테일 처리 실패 시 예외 발생
-                throw new BusinessException(ErrorCode.TTS_DETAIL_PROCESSING_FAILED);
+            } catch (BusinessException e) {
+                LOGGER.severe("TTSDetail 처리 중 오류 발생: " + ttsRequestDetailDto + ", 메시지: " + e.getMessage());
+                // 실패한 디테일에 대한 실패 응답 추가
+                TTSResponseDetailDto failedDetail = TTSResponseDetailDto.builder()
+                        .id(ttsRequestDetailDto.getId())
+                        .projectId(ttsProject.getId())
+                        .unitScript(ttsRequestDetailDto.getUnitScript())
+//                        .errorMessage(e.getMessage())
+                        .apiUnitStatus(APIUnitStatusConst.FAILURE)
+                        .build();
+                responseDetails.add(failedDetail);
+                failureCount++;
+                // 계속 진행
             }
         }
 
-        // 여기까지 진행되면 API는 성공으로 처리 및 DB 반영
-        ttsProject.updateAPIStatus(APIStatusConst.SUCCESS);
+        // 전체 API 상태 업데이트
+        if (failureCount == 0) {
+            ttsProject.updateAPIStatus(APIStatusConst.SUCCESS);
+            responseBuilder.apiStatus(APIStatusConst.SUCCESS);
+        } else if (successCount == 0) {
+            ttsProject.updateAPIStatus(APIStatusConst.FAILURE);
+            responseBuilder.apiStatus(APIStatusConst.FAILURE);
+        } else {
+            ttsProject.updateAPIStatus(APIStatusConst.PARTIAL_FAILURE);
+            responseBuilder.apiStatus(APIStatusConst.PARTIAL_FAILURE);
+        }
         ttsProjectRepository.save(ttsProject);
 
-        // ttsResponseDto 나머지 정보 값 처리
-        ttsResponseDto.setApiStatus(ttsProject.getApiStatus());
-        ttsResponseDto.setTtsDetails(responseDetails);
-        LOGGER.info("convertAllTtsDetails 완료: 생성된 ResponseDto = " + ttsResponseDto);
-        return ttsResponseDto;
+        // 응답 DTO에 디테일 정보 추가
+        responseBuilder.ttsDetails(responseDetails);
+
+        LOGGER.info("convertAllTtsDetails 완료: 생성된 ResponseDto = " + responseBuilder.build());
+        return responseBuilder.build();
     }
 
     /**
      * 프로젝트 저장 또는 업데이트
      *
-     * @param ttsSaveDto 프로젝트 데이터를 포함한 DTO
+     * @param ttsRequestDto 프로젝트 데이터를 포함한 DTO
      * @return 저장된 프로젝트 엔티티
      */
-    private TTSProject saveOrUpdateProject(TTSSaveDto ttsSaveDto, Long memberId) {
+    private TTSProject saveOrUpdateProject(TTSRequestDto ttsRequestDto, Long memberId) {
         // 프로젝트 ID가 존재하는 경우 업데이트, 없으면 새로 생성
-        Long projectId = Optional.ofNullable(ttsSaveDto.getProjectId())
+        Long projectId = Optional.ofNullable(ttsRequestDto.getProjectId())
                 .map(id -> {
                     // 기존 프로젝트 업데이트
-                    ttsServiceTeamMulti.updateProjectCustom(ttsSaveDto);
+                    ttsServiceTeamMulti.updateProjectCustom(ttsRequestDto);
                     return id;
                 })
                 .orElseGet(() -> {
                     // 새로운 프로젝트 생성
-                    return ttsServiceTeamMulti.createNewProjectCustom(ttsSaveDto, memberId);
+                    return ttsServiceTeamMulti.createNewProjectCustom(ttsRequestDto, memberId);
                 });
 
         // ID를 통해 프로젝트를 조회하고 반환
@@ -147,53 +165,53 @@ public class TTSService_team_api {
     /**
      * TTS 디테일 저장 또는 업데이트
      *
-     * @param detailDto TTS 디테일 데이터를 포함한 DTO
+     * @param ttsRequestDetailDto TTS 디테일 데이터를 포함한 DTO
      * @param ttsProject 연결된 프로젝트
      * @return 저장된 TTS 디테일 엔티티
      */
-    private TTSDetail saveOrUpdateDetail(TTSDetailDto detailDto, TTSProject ttsProject) {
+    private TTSDetail saveOrUpdateDetail(TTSRequestDetailDto ttsRequestDetailDto, TTSProject ttsProject) {
         // ID가 없으면 새로 생성, 있으면 업데이트
-        if (detailDto.getId() == null) {
-            detailDto.setId(ttsServiceTeamMulti.createTTSDetailCustom(detailDto, ttsProject));
+        if (ttsRequestDetailDto.getId() == null) {
+            ttsRequestDetailDto.setId(ttsServiceTeamMulti.createTTSDetailCustom(ttsRequestDetailDto, ttsProject));
         } else {
-            detailDto.setId(ttsServiceTeamMulti.processTTSDetailCustom(detailDto, ttsProject));
+            ttsRequestDetailDto.setId(ttsServiceTeamMulti.processTTSDetailCustom(ttsRequestDetailDto, ttsProject));
         }
 
         // 저장된 디테일 데이터를 조회하고 반환
-        return ttsDetailRepository.findById(detailDto.getId())
+        return ttsDetailRepository.findById(ttsRequestDetailDto.getId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.TTS_DETAIL_NOT_FOUND));
     }
 
     /**
      * TTS 디테일 처리: Google TTS API를 통해 텍스트를 오디오로 변환하고 저장
      *
-     * @param detailDto TTS 디테일 데이터를 포함한 DTO
+     * @param ttsRequestDetailDto TTS 디테일 데이터를 포함한 DTO
      * @param ttsProject 연결된 프로젝트
      * @return 변환된 오디오 파일 경로를 포함한 Map
      */
-    private Map<String, String> processTtsDetail(TTSDetailDto detailDto, TTSProject ttsProject) {
+    private Map<String, String> processTtsDetail(TTSRequestDetailDto ttsRequestDetailDto, TTSProject ttsProject) {
         // Google TTS API 호출로 오디오 데이터 생성
-        ByteString audioContent = callTTSApi(detailDto, ttsProject);
+        ByteString audioContent = callTTSApi(ttsRequestDetailDto, ttsProject);
         // 오디오 파일을 저장하고 URL 반환
-        String fileUrl = saveAudioFile(audioContent, detailDto.getUnitSequence(),
-                ttsProject.getMember().getId(), ttsProject.getId(), detailDto.getId());
+        String fileUrl = saveAudioFile(audioContent, ttsRequestDetailDto.getUnitSequence(),
+                ttsProject.getMember().getId(), ttsProject.getId(), ttsRequestDetailDto.getId());
         return Map.of("fileUrl", fileUrl);
     }
 
     /**
      * Google TTS API 호출: 텍스트를 오디오로 변환
      *
-     * @param detailDto TTS 디테일 데이터를 포함한 DTO
+     * @param ttsRequestDetailDto TTS 디테일 데이터를 포함한 DTO
      * @return 변환된 오디오 데이터(ByteString)
      */
-    private ByteString callTTSApi(TTSDetailDto detailDto, TTSProject ttsProject) {
-        LOGGER.info("callTTSApi 호출: " + detailDto);
+    private ByteString callTTSApi(TTSRequestDetailDto ttsRequestDetailDto, TTSProject ttsProject) {
+        LOGGER.info("callTTSApi 호출: " + ttsRequestDetailDto);
 
         // TTS 디테일과 음성 스타일 데이터 조회
         TTSDetail ttsDetail = ttsDetailRepository.findById(ttsProject.getMember().getId()).orElseThrow();
-        String languageCode = voiceStyleRepository.findById(detailDto.getUnitVoiceStyleId()).get().getLanguageCode();
-        String gender = voiceStyleRepository.findById(detailDto.getUnitVoiceStyleId()).get().getGender();
-        String script = detailDto.getUnitScript();
+        String languageCode = voiceStyleRepository.findById(ttsRequestDetailDto.getUnitVoiceStyleId()).get().getLanguageCode();
+        String gender = voiceStyleRepository.findById(ttsRequestDetailDto.getUnitVoiceStyleId()).get().getGender();
+        String script = ttsRequestDetailDto.getUnitScript();
 
 
         System.out.println("gender = " + gender);
@@ -206,12 +224,12 @@ public class TTSService_team_api {
         // 요청 페이로드 생성
         String requestPayload = String.format(
                 "{ \"text\": \"%s\", \"language\": \"%s\", \"gender\": \"%s\", \"speed\": %.2f, \"volume\": %.2f, \"pitch\": %.2f }",
-                detailDto.getUnitScript(),
+                ttsRequestDetailDto.getUnitScript(),
                 languageCode,
                 gender,
-                detailDto.getUnitSpeed(),
-                detailDto.getUnitVolume(),
-                detailDto.getUnitPitch()
+                ttsRequestDetailDto.getUnitSpeed(),
+                ttsRequestDetailDto.getUnitVolume(),
+                ttsRequestDetailDto.getUnitPitch()
         );
 
 
@@ -225,12 +243,12 @@ public class TTSService_team_api {
 
             // Google TTS API 요청 생성
             SynthesisInput input = SynthesisInput.newBuilder()
-                    .setText(Optional.ofNullable(detailDto.getUnitScript())
+                    .setText(Optional.ofNullable(ttsRequestDetailDto.getUnitScript())
                             .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_UNIT_SCRIPT)))
                     .build();
 
             // 음성 및 오디오 설정 생성
-            SsmlVoiceGender ssmlGender = getSsmlVoiceGender(detailDto);
+            SsmlVoiceGender ssmlGender = getSsmlVoiceGender(ttsRequestDetailDto);
             VoiceSelectionParams voice = VoiceSelectionParams.newBuilder()
                     .setLanguageCode(languageCode)
                     .setSsmlGender(ssmlGender)
@@ -238,9 +256,9 @@ public class TTSService_team_api {
 
             AudioConfig audioConfig = AudioConfig.newBuilder()
                     .setAudioEncoding(AudioEncoding.LINEAR16)
-                    .setSpeakingRate(Optional.ofNullable(detailDto.getUnitSpeed()).orElse(1.0F))
-                    .setVolumeGainDb(Optional.ofNullable(detailDto.getUnitVolume()).orElse(0.0F))
-                    .setPitch(Optional.ofNullable(detailDto.getUnitPitch()).orElse(0.0F))
+                    .setSpeakingRate(Optional.ofNullable(ttsRequestDetailDto.getUnitSpeed()).orElse(1.0F))
+                    .setVolumeGainDb(Optional.ofNullable(ttsRequestDetailDto.getUnitVolume()).orElse(0.0F))
+                    .setPitch(Optional.ofNullable(ttsRequestDetailDto.getUnitPitch()).orElse(0.0F))
                     .build();
 
             // Google TTS API 호출
@@ -286,12 +304,12 @@ public class TTSService_team_api {
     /**
      * VoiceStyle의 Gender를 SsmlVoiceGender로 변환
      *
-     * @param detailDto TTS 디테일 데이터를 포함한 DTO
+     * @param ttsRequestDetailDto TTS 디테일 데이터를 포함한 DTO
      * @return 변환된 SsmlVoiceGender
      */
-    private SsmlVoiceGender getSsmlVoiceGender(TTSDetailDto detailDto) {
+    private SsmlVoiceGender getSsmlVoiceGender(TTSRequestDetailDto ttsRequestDetailDto) {
         // 음성 스타일의 Gender 데이터를 가져와 변환
-        String gender = voiceStyleRepository.findById(detailDto.getUnitVoiceStyleId()).get().getGender();
+        String gender = voiceStyleRepository.findById(ttsRequestDetailDto.getUnitVoiceStyleId()).get().getGender();
         return switch (gender.toLowerCase()) {
             case "male" -> SsmlVoiceGender.MALE;
             case "female" -> SsmlVoiceGender.FEMALE;

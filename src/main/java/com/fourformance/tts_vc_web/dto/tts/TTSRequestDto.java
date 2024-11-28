@@ -1,6 +1,5 @@
 package com.fourformance.tts_vc_web.dto.tts;
 
-import com.fourformance.tts_vc_web.common.constant.APIStatusConst;
 import lombok.*;
 
 import java.util.List;
@@ -10,7 +9,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class TTSResponseDto {
+public class TTSRequestDto {
     private Long projectId;
     private String projectName;
     private Long globalVoiceStyleId;
@@ -18,6 +17,7 @@ public class TTSResponseDto {
     private Float globalSpeed;
     private Float globalPitch;
     private Float globalVolume;
-    private APIStatusConst apiStatus;
-    private List<TTSResponseDetailDto> ttsDetails;
+
+    private List<TTSRequestDetailDto> ttsDetails;
+
 }
