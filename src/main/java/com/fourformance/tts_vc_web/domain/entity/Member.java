@@ -33,7 +33,7 @@ public class Member extends BaseEntity {
     private Integer gender;
     private LocalDateTime birthDate;
     private String phoneNumber;
-    private String tou;
+    private boolean tou;
     private Boolean is_deleted = false;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
@@ -42,7 +42,7 @@ public class Member extends BaseEntity {
     // 생성 메서드
     public static Member createMember(String email, String pwd, String name,
                                       Integer gender, LocalDateTime birthDate,
-                                      String phoneNumber) {
+                                      String phoneNumber, Boolean tou) {
         Member member = new Member();
         member.email = email;
         member.pwd = pwd;
@@ -50,6 +50,7 @@ public class Member extends BaseEntity {
         member.gender = gender;
         member.birthDate = birthDate;
         member.phoneNumber = phoneNumber;
+        member.tou = tou; // 약관 동의 값 설정
         member.createdAt = LocalDateTime.now();
         member.updatedAt = LocalDateTime.now();
         return member;

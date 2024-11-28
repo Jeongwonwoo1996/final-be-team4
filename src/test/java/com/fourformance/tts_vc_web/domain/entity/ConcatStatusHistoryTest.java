@@ -32,7 +32,7 @@ class ConcatStatusHistoryTest {
 
     public Member 멤버_생성기() {
         // Member 객체 생성
-        Member member = Member.createMember("email.com", "pwd123", "이의준", 0, LocalDateTime.now(), "01012341234");
+        Member member = Member.createMember("email.com", "pwd123", "이의준", 0, LocalDateTime.now(), "01012341234",true);
         // Member 객체 DB에 저장
         memberRepository.save(member);
         em.flush();
