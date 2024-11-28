@@ -20,37 +20,12 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Create resource files
+      - name: Create properties files
         run: |
           mkdir -p src/main/resources
           echo "${{ secrets.SECRET_PROPERTIES }}" > src/main/resources/secret.properties
-          cat <<EOF > src/main/resources/StableFurnaceProject1.json
-          {
-            "type": "service_account",
-            "project_id": "${{ secrets.PROJECT_ID }}",
-            "private_key_id": "${{ secrets.PRIVATE_KEY_ID }}",
-            "private_key": "${{ secrets.PRIVATE_KEY }}",
-            "client_email": "${{ secrets.CLIENT_EMAIL }}",
-            "client_id": "${{ secrets.CLIENT_ID }}",
-            "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-            "token_uri": "${{ secrets.TOKEN_URI }}",
-            "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-            "client_x509_cert_url": "${{ secrets.CLIENT_X509_CERT_URL }}",
-            "universe_domain": "googleapis.com"
-          }
-          EOF
+          echo "${{ secrets.SOUND_JSON }}" >  src/main/resources/sound-potion-440705-j8-cc85748343a6.json
 
-      - name: Verify resource files
-        run: ls -l src/main/resources/
-
-      - name: Build without tests
-        run: ./gradlew build -x test
-
-      - name: Run specific test
-        run: ./gradlew test --tests "com.fourformance.tts_vc_web.QuerydslSetupTest"
-
-      - name: Upload Test Report
-        uses: actions/upload-artifact@v2
-        with:
-          name: test-report
-          path: build/reports/tests/test/index.html
+      - name: Build with Gradle
+        id: build
+        run: ./gradlew build
