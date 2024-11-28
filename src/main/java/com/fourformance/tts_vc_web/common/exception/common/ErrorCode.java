@@ -110,6 +110,7 @@ public enum ErrorCode {
     UNSUPPORTED_LANGUAGE_CODE(5061, HttpStatus.BAD_REQUEST, "지원되지 않는 언어 코드입니다."),
     INVALID_TEXT_FOR_EN(5062, HttpStatus.BAD_REQUEST, "언어 코드가 'en-US', 'en-GB', 'en-AU', 'en-IN'로 설정되었지만, 텍스트는 영어가 아닙니다."),
     VC_DETAIL_NOT_FOUND(5063, HttpStatus.NOT_FOUND, "VC 디테일을 찾을 수 없습니다."),
+
     FFMPEG_INITIALIZATION_FAILED(5064, HttpStatus.NOT_FOUND, "FFmpeg 초기화에 실패하였습니다."),
 
     // 6000번대 코드 : 회원 서비스 예외
@@ -121,6 +122,11 @@ public enum ErrorCode {
 
     // 7000번대 코드 : 작업 큐 관련 예외
     UNKNOWN_TASK_TYPE(6000, HttpStatus.NOT_FOUND, "작업 유형을 알 수 없습니다."),
+
+
+    // 6000번대 코드 : 작업 큐 관련 예외
+    UNKNOWN_TASK_TYPE(6000, HttpStatus.NOT_FOUND, "작업 유형을 알 수 없습니다."),
+
 
 
     // 9999 : 테스트용 커스텀 예외
