@@ -118,7 +118,7 @@ public class TTSService_team_multi {
 
         // tts detail 저장
         if (dto.getTtsDetails() != null) {
-            for (TTSDetailDto detailDto : dto.getTtsDetails()) {
+            for (TTSSaveDetailDto detailDto : dto.getTtsDetails()) {
                 createTTSDetail(detailDto, ttsProject);
             }
         }
@@ -162,7 +162,7 @@ public class TTSService_team_multi {
         );
 
         if (dto.getTtsDetails() != null) {
-            for (TTSDetailDto detailDto : dto.getTtsDetails()) {
+            for (TTSSaveDetailDto detailDto : dto.getTtsDetails()) {
                 // ttsDetail 업데이트 메서드 호출
                 processTTSDetail(detailDto, ttsProject);
             }
@@ -174,7 +174,7 @@ public class TTSService_team_multi {
         // 프로젝트 ID와 디테일 검증
         if (dto.getProjectId() == null) {
             if (dto.getTtsDetails() != null) {
-                for (TTSDetailDto detail : dto.getTtsDetails()) {
+                for (TTSSaveDetailDto detail : dto.getTtsDetails()) {
                     if (detail.getId() != null) {
                         throw new BusinessException(ErrorCode.PROJECT_DETAIL_NOT_MATCH);
                     }
@@ -185,7 +185,7 @@ public class TTSService_team_multi {
 
 
     // ttsDetail 생성 메서드
-    private void createTTSDetail(TTSDetailDto detailDto, TTSProject ttsProject) {
+    private void createTTSDetail(TTSSaveDetailDto detailDto, TTSProject ttsProject) {
 
         VoiceStyle voiceStyle = null;
         // voiceStyleId가 null이 아닌 경우에만 조회 ( voiceStyleId에 null을 허용한다는 의미입니다. 보이스 스타일을 지정하지 않고 저장할 수 있으니까 )
@@ -214,7 +214,7 @@ public class TTSService_team_multi {
     }
 
     // ttsDetail 업데이트 메서드
-    private void processTTSDetail(TTSDetailDto detailDto, TTSProject ttsProject) {
+    private void processTTSDetail(TTSSaveDetailDto detailDto, TTSProject ttsProject) {
 
         VoiceStyle detailStyle = em.merge(voiceStyleRepository.findById(detailDto.getUnitVoiceStyleId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_EXISTS_PROJECT)));
@@ -251,12 +251,12 @@ public class TTSService_team_multi {
      * @throws BusinessException DUPLICATE_UNIT_SEQUENCE 예외는 unitSequence에 중복이 있을 때 발생 INVALID_UNIT_SEQUENCE_ORDER 예외는
      *                           unitSequence가 순차적이지 않을 때 발생
      */
-    private void validateUnitSequence(List<TTSDetailDto> detailDtos) {
+    private void validateUnitSequence(List<TTSSaveDetailDto> detailDtos) {
         // 중복 체크를 위한 Set 생성
         Set<Integer> unitSequenceSet = new HashSet<>();
 
         // unitSequence 값 중복 여부 확인
-        for (TTSDetailDto detailDto : detailDtos) {
+        for (TTSSaveDetailDto detailDto : detailDtos) {
             if (!unitSequenceSet.add(detailDto.getUnitSequence())) {
                 // 중복된 unitSequence가 발견되면 예외 발생
                 throw new BusinessException(ErrorCode.DUPLICATE_UNIT_SEQUENCE);
@@ -265,7 +265,7 @@ public class TTSService_team_multi {
 
         // unitSequence 값을 정렬된 리스트로 변환하여 순차 여부 확인
         List<Integer> sequences = detailDtos.stream()
-                .map(TTSDetailDto::getUnitSequence)
+                .map(TTSSaveDetailDto::getUnitSequence)
                 .sorted()
                 .collect(Collectors.toList());
 

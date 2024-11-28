@@ -85,7 +85,9 @@ public class VCService_team_api {
         LOGGER.info("[타겟 오디오 조회 완료] 오디오 ID: " + memberAudio.getId());
 
         // Step 6: 타겟 오디오로 Voice ID 생성
+
         String voiceId = processTargetFiles(VCSaveRequestDto.getTrgFiles(), memberAudio);
+
         LOGGER.info("[Voice ID 생성 완료] Voice ID: " + voiceId);
 
         // Step 7: VC 프로젝트에 trg_voice_id 업데이트
@@ -155,7 +157,7 @@ public class VCService_team_api {
             throw new BusinessException(ErrorCode.FILE_PROCESSING_ERROR);
         }
     }
-
+    
 
     /**
      * 소스 파일 처리 및 변환
