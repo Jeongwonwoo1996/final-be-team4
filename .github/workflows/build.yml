@@ -7,36 +7,13 @@ on:
   workflow_dispatch:
 
 jobs:
-  Kill:
-    runs-on: ubuntu-latest
-    steps:
-      - name: kill jar
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USERNAME }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
-
-            # 기존 애플리케이션 종료
-            echo "Stopping existing application if running..."
-            PID=$(pgrep -f "java -jar")
-            if [ -n "$PID" ]; then
-              echo "Stopping existing application with PID $PID..."
-              sudo kill $PID
-              while ps -p $PID > /dev/null; do
-                echo "Waiting for process $PID to terminate..."
-                sleep 1
-              done
-              echo "Process $PID has been terminated."
-            else
-              echo "No application was running."
-            fi
-
   deploy:
     runs-on: ubuntu-latest
-    needs: Kill
+
     steps:
+
+
+      # 5. EC2 배포
       - name: Deploy to EC2
         uses: appleboy/ssh-action@master
         with:
@@ -44,7 +21,7 @@ jobs:
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-
+          
             # 환경 설정
             APP_DIR=~/backend
 
@@ -84,6 +61,21 @@ jobs:
             echo "Building the project with Gradle..."
             chmod +x gradlew
             ./gradlew build -x test
+
+            # 기존 애플리케이션 종료
+            echo "Stopping existing application if running..."
+            PID=$(pgrep -f "java -jar")
+            if [ -n "$PID" ]; then
+              echo "Stopping existing application with PID $PID..."
+              sudo kill $PID
+              while ps -p $PID > /dev/null; do
+                echo "Waiting for process $PID to terminate..."
+                sleep 1
+              done
+              echo "Process $PID has been terminated."
+            else
+              echo "No application was running."
+            fi
 
             # 안정화 시간 추가
             sleep 5
