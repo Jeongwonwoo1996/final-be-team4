@@ -7,14 +7,6 @@ import org.springframework.stereotype.Component;
 @Component
 public class TaskConsumer {
 
-//    private static final Logger log = LoggerFactory.getLogger(TaskConsumer.class);
-//
-//    @RabbitListener(queues = "popomance.queue")
-//    public void reciveMessage(final Message message) {
-//        String msgBody = new String(message.getBody());
-//        log.info(message.toString());
-//    }
-
     @RabbitListener(queues = TaskConfig.TTS_QUEUE)
     public void handleTTSTask(String message) {
         System.out.println("TTS audio task : " + message);
