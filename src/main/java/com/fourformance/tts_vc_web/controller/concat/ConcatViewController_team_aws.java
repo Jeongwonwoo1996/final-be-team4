@@ -43,9 +43,8 @@ public class ConcatViewController_team_aws {
             @RequestPart(value = "file", required = false) List<MultipartFile> files,
             HttpSession session) {
 
-        // 세션에 임의의 memberId 설정
         if (session.getAttribute("memberId") == null) {
-            session.setAttribute("memberId", 1L);
+            throw new BusinessException(ErrorCode.MEMBER_NOT_FOUND);
         }
 
         Long memberId = (Long) session.getAttribute("memberId");
