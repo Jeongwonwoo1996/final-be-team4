@@ -4,6 +4,7 @@ import com.fourformance.tts_vc_web.common.exception.common.BusinessException;
 import com.fourformance.tts_vc_web.common.exception.common.ErrorCode;
 import com.fourformance.tts_vc_web.dto.response.DataResponseDto;
 import com.fourformance.tts_vc_web.dto.response.ResponseDto;
+import com.fourformance.tts_vc_web.dto.tts.TTSRequestDto;
 import com.fourformance.tts_vc_web.dto.tts.TTSResponseDto;
 import com.fourformance.tts_vc_web.dto.tts.TTSSaveDto;
 import com.fourformance.tts_vc_web.service.tts.TTSService_team_api;
@@ -45,7 +46,7 @@ public class TTSController_team_api {
     /**
      * 텍스트 목록을 음성 파일로 변환하는 API 엔드포인트
      *
-     * @param ttsSaveDto 변환 요청 데이터 (프로젝트 정보 및 텍스트 디테일 포함)
+     * @param ttsRequestDto 변환 요청 데이터 (프로젝트 정보 및 텍스트 디테일 포함)
      * @return 변환 결과 데이터 (음성 파일 URL 및 상태 정보 포함)
      */
     @Operation(summary = "TTS 배치 변환", description = "주어진 텍스트 목록을 Google TTS API를 사용하여 음성 파일로 변환합니다.")
@@ -55,8 +56,8 @@ public class TTSController_team_api {
             @ApiResponse(responseCode = "500", description = "서버 내부 오류")
     })
     @PostMapping("/convert/batch")
-    public ResponseDto convertBatchTexts(@RequestBody TTSSaveDto ttsSaveDto, HttpSession session) {
-        LOGGER.info("컨트롤러 호출됨: " + ttsSaveDto);
+    public ResponseDto convertBatchTexts(@RequestBody TTSRequestDto ttsRequestDto, HttpSession session) {
+        LOGGER.info("컨트롤러 호출됨: " + ttsRequestDto);
 
         // 세션에 memberId 값이 설정되지 않았다면 예외 처리
         if (session.getAttribute("memberId") == null) {
@@ -67,17 +68,17 @@ public class TTSController_team_api {
         Long memberId = (Long) session.getAttribute("memberId");
 
         // 유효성 검증: 요청 데이터가 null이거나 텍스트 세부사항 리스트가 비어있는 경우 예외 처리
-        if (ttsSaveDto == null || ttsSaveDto.getTtsDetails() == null || ttsSaveDto.getTtsDetails().isEmpty()) {
+        if (ttsRequestDto == null || ttsRequestDto.getTtsDetails() == null || ttsRequestDto.getTtsDetails().isEmpty()) {
             LOGGER.warning("유효하지 않은 요청 데이터"); // 잘못된 요청 데이터 로깅
             throw new BusinessException(ErrorCode.INVALID_REQUEST_DATA); // 커스텀 예외 발생
         }
 
         // 요청 데이터 유효성 검사
-        validateRequestData(ttsSaveDto);
+        validateRequestData(ttsRequestDto);
 
         try {
             // TTS 변환 처리
-            TTSResponseDto ttsResponseDto = ttsService.convertAllTtsDetails(ttsSaveDto, memberId);
+            TTSResponseDto ttsResponseDto = ttsService.convertAllTtsDetails(ttsRequestDto, memberId);
 
             // 변환 결과가 비어있으면 실패로 간주
             if (ttsResponseDto.getTtsDetails().isEmpty()) {
@@ -103,15 +104,15 @@ public class TTSController_team_api {
     /**
      * 요청 데이터 유효성 검사
      *
-     * @param ttsSaveDto 요청 데이터
+     * @param ttsRequestDto 요청 데이터
      * @throws BusinessException 잘못된 요청 데이터인 경우 예외 발생
      */
-    private void validateRequestData(TTSSaveDto ttsSaveDto) {
-        if (ttsSaveDto == null) {
+    private void validateRequestData(TTSRequestDto ttsRequestDto) {
+        if (ttsRequestDto == null) {
             LOGGER.warning("요청 데이터가 null입니다.");
             throw new BusinessException(ErrorCode.INVALID_REQUEST_DATA);
         }
-        if (ttsSaveDto.getTtsDetails() == null || ttsSaveDto.getTtsDetails().isEmpty()) {
+        if (ttsRequestDto.getTtsDetails() == null || ttsRequestDto.getTtsDetails().isEmpty()) {
             LOGGER.warning("요청 데이터에 텍스트 디테일이 없습니다.");
             throw new BusinessException(ErrorCode.INVALID_REQUEST_TEXT_DETAIL_DATA);
         }

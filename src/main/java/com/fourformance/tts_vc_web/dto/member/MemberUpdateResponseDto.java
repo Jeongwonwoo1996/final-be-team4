@@ -18,5 +18,6 @@ public class MemberUpdateResponseDto {
     private Long id; // 수정된 회원의 고유 ID
     private String email; // 수정된 회원의 이메일
     private String name; // 수정된 회원의 이름
+    private String phoneNumber; // 수정된 회원의 전화번호
     private LocalDateTime updatedAt; // 정보가 수정된 시간
 }
