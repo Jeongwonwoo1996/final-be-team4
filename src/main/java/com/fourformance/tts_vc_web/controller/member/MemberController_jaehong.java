@@ -10,7 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/members")
+@RequestMapping("/member")
 @RequiredArgsConstructor
 @Tag(name = "Member Controller", description = "회원 관리와 관련된 작업을 제공합니다.")
 public class MemberController_jaehong {
