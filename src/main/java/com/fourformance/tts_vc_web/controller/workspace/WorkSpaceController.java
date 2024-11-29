@@ -2,7 +2,10 @@ package com.fourformance.tts_vc_web.controller.workspace;
 
 import com.fourformance.tts_vc_web.dto.response.DataResponseDto;
 import com.fourformance.tts_vc_web.dto.response.ResponseDto;
-import com.fourformance.tts_vc_web.dto.workspace.*;
+import com.fourformance.tts_vc_web.dto.workspace.ExportWithDownloadLinkDto;
+import com.fourformance.tts_vc_web.dto.workspace.ProjectListDto;
+import com.fourformance.tts_vc_web.dto.workspace.RecentExportDto;
+import com.fourformance.tts_vc_web.dto.workspace.RecentProjectDto;
 import com.fourformance.tts_vc_web.repository.OutputAudioMetaRepository;
 import com.fourformance.tts_vc_web.repository.ProjectRepository;
 import com.fourformance.tts_vc_web.repository.workspace.OutputAudioMetaRepositoryCustomImpl;
@@ -91,16 +94,31 @@ public class WorkSpaceController {
         // 결과를 ResponseDto로 래핑하여 반환
         return DataResponseDto.of(exports);
     }
+
+//    @GetMapping("/exports")
+//    public ResponseDto getExports2(
+//            @RequestParam(name="keyword", required = false) String keyword,
+//            @PageableDefault(size = 10) Pageable pageable,
+//            HttpSession session
+//
+//    ) {
+//        Long memberId =1L;
+//
+//        Page<ExportWithDownloadLinkDto> exports = workspaceService.getRecentExportsWithDownloadLink(memberId, keyword, pageable);
+//        return DataResponseDto.of(exports);
+//    }
+
     @GetMapping("/exports")
     public ResponseDto getExports2(
-            @RequestParam(name="keyword", required = false) String keyword,
+            @RequestParam(name = "keyword", required = false) String keyword,
             @PageableDefault(size = 10) Pageable pageable,
             HttpSession session
 
     ) {
-        Long memberId =1L;
+        Long memberId = 1L;
 
-        Page<ExportWithDownloadLinkDto> exports = workspaceService.getRecentExportsWithDownloadLink(memberId, keyword, pageable);
+        Page<ExportWithDownloadLinkDto> exports = outputAudioMetaRepository.findExportHistoryBySearchCriteria(memberId,
+                keyword, pageable);
         return DataResponseDto.of(exports);
     }
 }

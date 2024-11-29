@@ -1,6 +1,3 @@
-// 모든 조건 백업
-
-
 package com.fourformance.tts_vc_web.repository.workspace;
 
 import static com.fourformance.tts_vc_web.domain.entity.QConcatDetail.concatDetail;
