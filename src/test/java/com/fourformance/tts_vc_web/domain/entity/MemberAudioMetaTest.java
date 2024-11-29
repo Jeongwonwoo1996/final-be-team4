@@ -32,7 +32,7 @@ class MemberAudioMetaTest {
     EntityManager em;
 
     public Member createTestMember() {
-        Member member = Member.createMember("aaa@aaa.com","1234","JaneDoe",1, LocalDateTime.now(),"01011112222");
+        Member member = Member.createMember("aaa@aaa.com","1234","JaneDoe",1, LocalDateTime.now(),"01011112222",true);
         memberRepository.save(member);
         return member;
     }

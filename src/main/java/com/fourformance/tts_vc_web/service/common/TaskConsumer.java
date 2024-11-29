@@ -13,6 +13,7 @@ public class TaskConsumer {
         // 처리 로직 구현
 
         // TTS 생성 로직 구현
+
     }
 
     @RabbitListener(queues = TaskConfig.VC_QUEUE)
