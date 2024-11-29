@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -226,8 +227,16 @@ public class VCService_team_api {
             String convertedFilePath = elevenLabsClient.convertSpeechToSpeech(voiceId, sourceFileUrl);
             LOGGER.info("[파일 변환 완료] 파일 경로: " + convertedFilePath);
 
-            // Step 3: 변환된 파일 읽기 및 S3 저장
-            byte[] convertedFileBytes = Files.readAllBytes(Paths.get(System.getProperty("user.home") + "/uploads/" + convertedFilePath));
+            // Step 3.1: uploads 폴더 확인 및 생성
+            String uploadsDir = System.getProperty("user.home") + "/uploads/";
+            File uploadFolder = new File(uploadsDir);
+            if (!uploadFolder.exists()) {
+                LOGGER.info("[업로드 폴더 생성] 경로: " + uploadsDir);
+                uploadFolder.mkdirs(); // 폴더가 없으면 생성
+            }
+
+            // Step 3.2: 변환된 파일 읽기
+            byte[] convertedFileBytes = Files.readAllBytes(Paths.get(uploadsDir + convertedFilePath));
             MultipartFile convertedMultipartFile = new ConvertedMultipartFile_team_api(
                     convertedFileBytes,
                     convertedFilePath,
