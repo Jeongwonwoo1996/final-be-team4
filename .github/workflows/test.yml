@@ -64,6 +64,4 @@
 #         id: build
 #         run: ./gradlew build -x test
 
-#       # 7. Gradle 테스트 실행
-#       - name: Run Gradle tests
-#         run: ./gradlew test --debug
+
