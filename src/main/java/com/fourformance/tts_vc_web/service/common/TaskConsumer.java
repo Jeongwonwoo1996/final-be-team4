@@ -22,6 +22,7 @@ public class TaskConsumer {
             // 실패 상태로 업데이트
             System.out.println("TTS 처리 실패"+e);
         }
+
     }
 
     @RabbitListener(queues = TaskConfig.VC_QUEUE)

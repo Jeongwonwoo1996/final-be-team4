@@ -21,5 +21,5 @@ public class MemberSignUpRequestDto {
     private String pwdConfirm;  // 비밀번호 확인
     private String name;        // 이름
     private String phoneNumber; // 전화번호
-    private boolean tou;        // 약관 동의 여부
+    private Boolean tou;        // 약관 동의 상태: "true": 동의 , "false" : 미동의
 }

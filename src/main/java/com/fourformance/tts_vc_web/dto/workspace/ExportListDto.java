@@ -1,32 +1,43 @@
 package com.fourformance.tts_vc_web.dto.workspace;
 
-import java.time.LocalDateTime;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fourformance.tts_vc_web.service.common.S3Service;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
+
+import java.time.LocalDateTime;
+
 
 @Data
 @AllArgsConstructor
+@NoArgsConstructor
 public class ExportListDto {
 
-    Long outputAudioMetaId; // 추가된 필드
+    Long outputAudioMetaId;
     String projectType;
     String projectName;
     String fileName;
     String script;
     String unitStatus;
-    String downloadLink;
-    LocalDateTime updateAt;
+    String url; // generatedPresignedUrL로 만들어전달 // 버킷 루트로 전달예정.
+    LocalDateTime createAt;
 
-    // 생성자 수정
-    public ExportListDto(Long outputAudioMetaId, String projectType, String projectName, String filename, String script,
-                         String unitStatus, LocalDateTime updateAt, String downloadLink) {
-        this.outputAudioMetaId = outputAudioMetaId; // 추가된 필드 초기화
+    @JsonIgnore
+    String bucketRoute;
+
+    public ExportListDto(Long outputAudioMetaId, String projectType, String projectName, String fileName, String script,
+                         String unitStatus, LocalDateTime createAt, String url) {
+        this.outputAudioMetaId = outputAudioMetaId;
         this.projectType = projectType;
         this.projectName = projectName;
-        this.fileName = filename;
+        this.fileName = fileName;
         this.script = script;
         this.unitStatus = unitStatus;
-        this.updateAt = updateAt;
-        this.downloadLink = downloadLink;
+        this.createAt = createAt;
+        this.url = url;
+
     }
 }
