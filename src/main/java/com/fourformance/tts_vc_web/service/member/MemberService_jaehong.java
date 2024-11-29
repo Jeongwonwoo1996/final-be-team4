@@ -26,6 +26,10 @@ public class MemberService_jaehong {
         if (Boolean.FALSE.equals(requestDto.getTou())) { // 약관 미동의
             throw new BusinessException(ErrorCode.TOU_NOT_AGREED);
         }
+        // 이메일 형식 검증
+        if (!requestDto.getEmail().matches("^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,6}$")) {
+            throw new BusinessException(ErrorCode.INVALID_EMAIL_FORMAT);
+        }
 
         // 이메일 중복 체크
         if (memberRepository.existsByEmail(requestDto.getEmail())) {
@@ -35,6 +39,11 @@ public class MemberService_jaehong {
         // 비밀번호 일치 여부 확인
         if (!requestDto.getPwd().equals(requestDto.getPwdConfirm())) {
             throw new BusinessException(ErrorCode.SIGNUP_PASSWORD_MISMATCH);
+        }
+
+        // 전화번호 형식 검증
+        if (!requestDto.getPhoneNumber().matches("^\\d{3}-\\d{4}-\\d{4}$")) {
+            throw new BusinessException(ErrorCode.INVALID_PHONE_NUMBER_FORMAT);
         }
 
         // 엔티티 생성 (팩토리 메서드 사용)
@@ -101,7 +110,7 @@ public class MemberService_jaehong {
             }
 
             // 전화번호 형식 검증
-            if (!requestDto.getPhoneNumber().matches("^\\d{2,3}-\\d{3,4}-\\d{4}$")) {
+            if (!requestDto.getPhoneNumber().matches("^\\d{3}-\\d{4}-\\d{4}$")) {
                 throw new BusinessException(ErrorCode.INVALID_PHONE_NUMBER_FORMAT);
             }
 
