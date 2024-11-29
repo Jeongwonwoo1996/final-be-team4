@@ -67,3 +67,4 @@ jobs:
       # 7. Gradle 테스트 실행
       - name: Run tests
         run: ./gradlew test -Dspring.profiles.active=test
+
