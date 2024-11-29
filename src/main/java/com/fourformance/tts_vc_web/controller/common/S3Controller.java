@@ -85,6 +85,7 @@ public class S3Controller {
         return ResponseEntity.ok("삭제 성공하였습니다.");
     }
 
+    //
     @DeleteMapping("/delete/audio/{outputAudioMetaId}")
     public ResponseEntity<String> deleteMemberAudio(
             @PathVariable("outputAudioMetaId") Long outputAudioMetaId) {
