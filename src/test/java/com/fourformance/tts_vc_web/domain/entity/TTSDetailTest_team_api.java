@@ -37,7 +37,7 @@ class TTSDetailTest {
     // 테스트용 Member 객체 생성 메서드
     public Member createTestMember() {
         // 멤버 생성
-        return Member.createMember("test@example.com", "password", "Test User", 1, LocalDateTime.now(), "010-1234-5678");
+        return Member.createMember("test@example.com", "password", "Test User", 1, LocalDateTime.now(), "010-1234-5678",true);
     }
 
     // 테스트용 TTSProject 객체 생성 메서드

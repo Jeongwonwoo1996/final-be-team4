@@ -30,7 +30,7 @@ class MemberTest {
 
         // given
             // 멤버 객체 생성
-        Member beforeMember = Member.createMember("email@email.com","pwd123","name123",0, LocalDateTime.now(),"01010101100");
+        Member beforeMember = Member.createMember("email@email.com","pwd123","name123",0, LocalDateTime.now(),"01010101100",true);
             // 멤버 객체 DB에 저장
         memberRepository.save(beforeMember);
         em.flush();
@@ -53,7 +53,7 @@ class MemberTest {
 
         // given
             // 멤버 객체 생성
-        Member beforeMember = Member.createMember("email@email.com","pwd123","name123",0, LocalDateTime.now(),"01010101100");
+        Member beforeMember = Member.createMember("email@email.com","pwd123","name123",0, LocalDateTime.now(),"01010101100",true);
             // 멤버 객체 DB에 저장
         memberRepository.save(beforeMember);
         em.flush();
@@ -85,7 +85,7 @@ class MemberTest {
     public void 멤버_업데이트_실패_테스트() {
         // given
         // 멤버 객체 생성
-        Member beforeMember = Member.createMember("email@email.com","pwd123","name123",0, LocalDateTime.now(),"01010101100");
+        Member beforeMember = Member.createMember("email@email.com","pwd123","name123",0, LocalDateTime.now(),"01010101100",true);
         // 멤버 객체 DB에 저장
         memberRepository.save(beforeMember);
         em.flush();
@@ -114,7 +114,7 @@ class MemberTest {
     public void 멤버_삭제_테스트() {
         // given
             // 멤버 객체 생성
-        Member beforeMember = Member.createMember("email@email.com","pwd123","name123",0, LocalDateTime.now(),"01010101100");
+        Member beforeMember = Member.createMember("email@email.com","pwd123","name123",0, LocalDateTime.now(),"01010101100",true);
          // 멤버 객체 DB에 저장
         memberRepository.save(beforeMember);
         em.flush();
