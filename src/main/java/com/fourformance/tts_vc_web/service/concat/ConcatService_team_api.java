@@ -15,7 +15,7 @@ import lombok.RequiredArgsConstructor;
 import net.bramp.ffmpeg.FFmpeg;
 import net.bramp.ffmpeg.FFprobe;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Profile;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,6 +38,7 @@ public class ConcatService_team_api {
     private final ConcatStatusHistoryRepository concatStatusHistoryRepository; // 프로젝트 이력 관련 저장소
     private final ConcatDetailRepository concatDetailRepository; // 디테일 관련 저장소
     private final MemberRepository memberRepository; // 멤버 관련 저장소
+    private final Environment environment; // Environment 주입
 
     private static final Logger LOGGER = Logger.getLogger(ConcatService_team_api.class.getName());
 
@@ -52,6 +53,11 @@ public class ConcatService_team_api {
      */
     @PostConstruct
     public void initialize() {
+        if (isTestEnvironment()) {
+            LOGGER.info("테스트 환경이므로 initialize 메서드를 건너뜁니다.");
+            return;
+        }
+
         // 업로드 디렉토리 생성
         File uploadFolder = new File(uploadDir);
         if (!uploadFolder.exists()) {
@@ -70,6 +76,13 @@ public class ConcatService_team_api {
 
         // FFmpeg 인스턴스 초기화 (예시)
         setupFFmpeg();
+    }
+
+    /**
+     * 테스트 환경인지 확인하는 메서드
+     */
+    private boolean isTestEnvironment() {
+        return Arrays.asList(environment.getActiveProfiles()).contains("test");
     }
 
     /**

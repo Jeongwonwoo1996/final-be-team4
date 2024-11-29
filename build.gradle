@@ -68,3 +68,7 @@ sonar {
         property "sonar.exclusions", "**/resources/**"
     }
 }
+
+test {
+    systemProperty 'spring.profiles.active', 'test'
+}
