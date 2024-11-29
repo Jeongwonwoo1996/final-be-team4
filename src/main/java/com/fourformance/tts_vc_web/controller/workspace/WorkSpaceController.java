@@ -2,12 +2,10 @@ package com.fourformance.tts_vc_web.controller.workspace;
 
 import com.fourformance.tts_vc_web.dto.response.DataResponseDto;
 import com.fourformance.tts_vc_web.dto.response.ResponseDto;
-import com.fourformance.tts_vc_web.dto.workspace.ExportListDto2;
-import com.fourformance.tts_vc_web.dto.workspace.ProjectListDto;
-import com.fourformance.tts_vc_web.dto.workspace.RecentExportDto;
-import com.fourformance.tts_vc_web.dto.workspace.RecentProjectDto;
+import com.fourformance.tts_vc_web.dto.workspace.*;
 import com.fourformance.tts_vc_web.repository.OutputAudioMetaRepository;
 import com.fourformance.tts_vc_web.repository.ProjectRepository;
+import com.fourformance.tts_vc_web.repository.workspace.OutputAudioMetaRepositoryCustomImpl;
 import com.fourformance.tts_vc_web.service.common.ProjectService_team_aws;
 import com.fourformance.tts_vc_web.service.workspace.WorkspaceService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -32,6 +30,7 @@ public class WorkSpaceController {
     private final ProjectService_team_aws projectService;
     private final ProjectRepository projectRepository;
     private final OutputAudioMetaRepository outputAudioMetaRepository;
+    private final OutputAudioMetaRepositoryCustomImpl outputAudioMetaRepositoryCustomImpl;
 
     // 최근 5개의 프로젝트를 조회하는 api
     @Operation(summary = "최근 프로젝트 5개 조회", description = "해당 유저의 최근 프로젝트 5개를 조회합니다. <br>"
@@ -82,10 +81,26 @@ public class WorkSpaceController {
             @RequestParam(name = "keyword", required = false) String keyword,
             HttpSession session
     ) {
-        //        Long memberId = (Long) session.getAttribute("memberId");
-        Long memberId = 1L; // 개발단계 임시 하드코딩
+        // 임시로 memberId를 하드코딩 (개발 단계)
+        // 실제 배포에서는 세션에서 memberId를 가져와야 합니다.
+        Long memberId = 1L; // (Long) session.getAttribute("memberId");
 
-        List<ExportListDto2> exports = outputAudioMetaRepository.findExportHistoryBySearchCriteria2(memberId, keyword);
+        // WorkspaceService의 메서드 호출
+        List<ExportWithDownloadLinkDto> exports = workspaceService.getRecentExportsWithDownloadLink(memberId, keyword);
+
+        // 결과를 ResponseDto로 래핑하여 반환
+        return DataResponseDto.of(exports);
+    }
+    @GetMapping("/test")
+    public ResponseDto getExports2(
+            @RequestParam(name="keyword", required = false) String keyword,
+            @PageableDefault(size = 10) Pageable pageable,
+            HttpSession session
+
+    ) {
+        Long memberId =1L;
+
+        Page<ExportWithDownloadLinkDto> exports = workspaceService.getRecentExportsWithDownloadLink(memberId, keyword, pageable);
         return DataResponseDto.of(exports);
     }
 }

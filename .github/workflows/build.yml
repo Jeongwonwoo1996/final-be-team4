@@ -43,7 +43,6 @@ jobs:
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-
             # 환경 설정
             APP_DIR=~/backend
 
