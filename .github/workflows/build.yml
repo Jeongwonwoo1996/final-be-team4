@@ -84,7 +84,7 @@ jobs:
 
             # 새 애플리케이션 실행
             echo "Starting the new application..."
-            nohup java -jar build/libs/tts_vc_web-0.0.1-SNAPSHOT.jar > app.log 2>&1 &
+            sudo nohup java -jar build/libs/tts_vc_web-0.0.1-SNAPSHOT.jar > app.log 2>&1 &
             sleep 5
             if pgrep -f "java -jar" > /dev/null; then
               echo "Application started successfully."
