@@ -12,10 +12,12 @@ import static com.fourformance.tts_vc_web.domain.entity.QVCDetail.vCDetail;
 import static com.fourformance.tts_vc_web.domain.entity.QVCProject.vCProject;
 
 import com.fourformance.tts_vc_web.domain.entity.ConcatProject;
+import com.fourformance.tts_vc_web.domain.entity.Project;
 import com.fourformance.tts_vc_web.domain.entity.TTSProject;
 import com.fourformance.tts_vc_web.domain.entity.VCProject;
 import com.fourformance.tts_vc_web.dto.workspace.ProjectListDto;
 import com.querydsl.core.BooleanBuilder;
+import com.querydsl.core.QueryResults;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.persistence.EntityManager;
@@ -182,13 +184,13 @@ public class ProjectRepositoryCustomImpl implements ProjectRepositoryCustom {
             keywordConditions.or(tTSProject.projectType.containsIgnoreCase(keyword)); // TTS 타입
             keywordConditions.or(vCProject.projectType.containsIgnoreCase(keyword)); // VC 타입
             keywordConditions.or(concatProject.projectType.containsIgnoreCase(keyword)); // Concat 타입
+
             whereClause.and(keywordConditions);
         }
 
-        // 데이터 조회
-        List<ProjectListDto> dtos = queryFactory
+        // QueryDSL fetchResults로 데이터 조회 및 변환
+        QueryResults<Project> queryResults = queryFactory
                 .selectFrom(project)
-                // TTSDetail과 firstScript 조건으로 디테일 조인
                 .leftJoin(tTSProject).on(tTSProject.id.eq(project.id))
                 .leftJoin(tTSDetail).on(
                         tTSDetail.ttsProject.id.eq(tTSProject.id)
@@ -200,7 +202,6 @@ public class ProjectRepositoryCustomImpl implements ProjectRepositoryCustom {
                                                         .and(tTSDetail.isDeleted.isFalse()))
                                 ))
                 )
-                // VCDetail과 firstScript 조건 조인
                 .leftJoin(vCProject).on(vCProject.id.eq(project.id))
                 .leftJoin(vCDetail).on(
                         vCDetail.vcProject.id.eq(vCProject.id)
@@ -212,7 +213,6 @@ public class ProjectRepositoryCustomImpl implements ProjectRepositoryCustom {
                                                         .and(vCDetail.isDeleted.isFalse()))
                                 ))
                 )
-                // ConcatDetail과 firstScript 조건 조인
                 .leftJoin(concatProject).on(concatProject.id.eq(project.id))
                 .leftJoin(concatDetail).on(
                         concatDetail.concatProject.id.eq(concatProject.id)
@@ -225,11 +225,13 @@ public class ProjectRepositoryCustomImpl implements ProjectRepositoryCustom {
                                 ))
                 )
                 .where(whereClause)
-                .orderBy(project.updatedAt.desc()) // 프로젝트 업데이트 날짜 기준 내림차순 정렬
+                .orderBy(project.updatedAt.desc())
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
-                .fetch()
-                .stream()
+                .fetchResults(); // fetchResults 사용
+
+        // 결과 DTO로 변환
+        List<ProjectListDto> results = queryResults.getResults().stream()
                 .map(p -> {
                     ProjectListDto dto = new ProjectListDto();
                     dto.setProjectId(p.getId());
@@ -249,9 +251,9 @@ public class ProjectRepositoryCustomImpl implements ProjectRepositoryCustom {
                         dto.setScript(firstScript);
                         dto.setProjectStatus(tts.getApiStatus().toString());
                         dto.setProjectType("TTS");
-
-                        // VC 프로젝트 처리
-                    } else if (p instanceof VCProject vc) {
+                    }
+                    // VC 프로젝트 처리
+                    else if (p instanceof VCProject vc) {
                         String firstScript = queryFactory
                                 .select(vCDetail.unitScript)
                                 .from(vCDetail)
@@ -262,9 +264,9 @@ public class ProjectRepositoryCustomImpl implements ProjectRepositoryCustom {
                         dto.setScript(firstScript);
                         dto.setProjectStatus(vc.getApiStatus().toString());
                         dto.setProjectType("VC");
-
-                        // Concat 프로젝트 처리
-                    } else if (p instanceof ConcatProject concat) {
+                    }
+                    // Concat 프로젝트 처리
+                    else if (p instanceof ConcatProject concat) {
                         String firstScript = queryFactory
                                 .select(concatDetail.unitScript)
                                 .from(concatDetail)
@@ -280,14 +282,10 @@ public class ProjectRepositoryCustomImpl implements ProjectRepositoryCustom {
                 })
                 .toList();
 
-        // 전체 데이터 개수 조회
-        long totalCount = queryFactory
-                .select(project.count())
-                .from(project)
-                .where(whereClause)
-                .fetchOne();
+        // 전체 개수
+        long total = queryResults.getTotal();
 
         // Page 객체로 반환
-        return new PageImpl<>(dtos, pageable, totalCount);
+        return new PageImpl<>(results, pageable, total);
     }
 }
