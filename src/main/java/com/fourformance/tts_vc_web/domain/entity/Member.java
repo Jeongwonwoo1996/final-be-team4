@@ -33,7 +33,7 @@ public class Member extends BaseEntity {
     private Integer gender;
     private LocalDateTime birthDate;
     private String phoneNumber;
-    private boolean tou;
+    private Boolean tou;
     private Boolean is_deleted = false;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
