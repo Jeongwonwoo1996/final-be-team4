@@ -147,11 +147,11 @@ public enum ErrorCode {
 
 
 
-    SERVICE_UNAVAILABLE(7000, HttpStatus.SERVICE_UNAVAILABLE, "서비스를 사용할 수 없습니다. 잠시 후 다시 시도해주세요."),
+    SERVICE_UNAVAILABLE(6027, HttpStatus.SERVICE_UNAVAILABLE, "서비스를 사용할 수 없습니다. 잠시 후 다시 시도해주세요."),
 
 
     // 7000번대 코드 : 작업 큐 관련 예외
-    UNKNOWN_TASK_TYPE(6000, HttpStatus.NOT_FOUND, "작업 유형을 알 수 없습니다."),
+    UNKNOWN_TASK_TYPE(7000, HttpStatus.NOT_FOUND, "작업 유형을 알 수 없습니다."),
 
 
 
