@@ -38,7 +38,7 @@ class VCProjectTest_team_api {
 
     // 테스트용 Member 생성
     private Member createTestMember() {
-        return Member.createMember("test@user.com", "1234", "Test User", 0, LocalDateTime.now(), "01012345678");
+        return Member.createMember("test@user.com", "1234", "Test User", 0, LocalDateTime.now(), "01012345678",true);
     }
 
     // 테스트용 MemberAudioMeta 생성

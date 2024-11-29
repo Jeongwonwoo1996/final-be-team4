@@ -11,20 +11,18 @@ import com.querydsl.core.types.dsl.PathInits;
 
 
 /**
- * QMultiJobLog is a Querydsl query type for MultiJobLog
+ * QTask is a Querydsl query type for Task
  */
 @Generated("com.querydsl.codegen.DefaultEntitySerializer")
-public class QMultiJobLog extends EntityPathBase<MultiJobLog> {
+public class QTask extends EntityPathBase<Task> {
 
-    private static final long serialVersionUID = -1137078361L;
+    private static final long serialVersionUID = 1286337694L;
 
     private static final PathInits INITS = PathInits.DIRECT2;
 
-    public static final QMultiJobLog multiJobLog = new QMultiJobLog("multiJobLog");
+    public static final QTask task = new QTask("task");
 
     public final com.fourformance.tts_vc_web.domain.baseEntity.QBaseEntity _super = new com.fourformance.tts_vc_web.domain.baseEntity.QBaseEntity(this);
-
-    public final StringPath comment = createString("comment");
 
     public final DateTimePath<java.time.LocalDateTime> createdAt = createDateTime("createdAt", java.time.LocalDateTime.class);
 
@@ -34,10 +32,6 @@ public class QMultiJobLog extends EntityPathBase<MultiJobLog> {
     //inherited
     public final DateTimePath<java.time.LocalDateTime> createdDate = _super.createdDate;
 
-    public final DateTimePath<java.time.LocalDateTime> endedAt = createDateTime("endedAt", java.time.LocalDateTime.class);
-
-    public final StringPath failBy = createString("failBy");
-
     public final NumberPath<Long> id = createNumber("id", Long.class);
 
     //inherited
@@ -46,33 +40,37 @@ public class QMultiJobLog extends EntityPathBase<MultiJobLog> {
     //inherited
     public final DateTimePath<java.time.LocalDateTime> lastModifiedDate = _super.lastModifiedDate;
 
-    public final EnumPath<com.fourformance.tts_vc_web.common.constant.MultiJobLogStatusConst> multiJobLogStatusConst = createEnum("multiJobLogStatusConst", com.fourformance.tts_vc_web.common.constant.MultiJobLogStatusConst.class);
-
     public final QProject project;
-
-    public final StringPath projectName = createString("projectName");
 
     public final EnumPath<com.fourformance.tts_vc_web.common.constant.ProjectType> projectType = createEnum("projectType", com.fourformance.tts_vc_web.common.constant.ProjectType.class);
 
-    public final NumberPath<Integer> sequence = createNumber("sequence", Integer.class);
+    public final StringPath resultMsg = createString("resultMsg");
 
-    public QMultiJobLog(String variable) {
-        this(MultiJobLog.class, forVariable(variable), INITS);
+    public final StringPath taskData = createString("taskData");
+
+    public final EnumPath<com.fourformance.tts_vc_web.common.constant.TaskStatusConst> taskStatusConst = createEnum("taskStatusConst", com.fourformance.tts_vc_web.common.constant.TaskStatusConst.class);
+
+    public final StringPath trackingId = createString("trackingId");
+
+    public final DateTimePath<java.time.LocalDateTime> updatedAt = createDateTime("updatedAt", java.time.LocalDateTime.class);
+
+    public QTask(String variable) {
+        this(Task.class, forVariable(variable), INITS);
     }
 
-    public QMultiJobLog(Path<? extends MultiJobLog> path) {
+    public QTask(Path<? extends Task> path) {
         this(path.getType(), path.getMetadata(), PathInits.getFor(path.getMetadata(), INITS));
     }
 
-    public QMultiJobLog(PathMetadata metadata) {
+    public QTask(PathMetadata metadata) {
         this(metadata, PathInits.getFor(metadata, INITS));
     }
 
-    public QMultiJobLog(PathMetadata metadata, PathInits inits) {
-        this(MultiJobLog.class, metadata, inits);
+    public QTask(PathMetadata metadata, PathInits inits) {
+        this(Task.class, metadata, inits);
     }
 
-    public QMultiJobLog(Class<? extends MultiJobLog> type, PathMetadata metadata, PathInits inits) {
+    public QTask(Class<? extends Task> type, PathMetadata metadata, PathInits inits) {
         super(type, metadata, inits);
         this.project = inits.isInitialized("project") ? new QProject(forProperty("project"), inits.get("project")) : null;
     }
