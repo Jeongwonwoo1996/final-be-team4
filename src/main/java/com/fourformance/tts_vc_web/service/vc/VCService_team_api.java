@@ -6,6 +6,7 @@ import com.fourformance.tts_vc_web.common.constant.APIUnitStatusConst;
 import com.fourformance.tts_vc_web.common.constant.AudioType;
 import com.fourformance.tts_vc_web.common.exception.common.BusinessException;
 import com.fourformance.tts_vc_web.common.exception.common.ErrorCode;
+import com.fourformance.tts_vc_web.common.util.CommonFileUtils;
 import com.fourformance.tts_vc_web.common.util.ConvertedMultipartFile_team_api;
 import com.fourformance.tts_vc_web.common.util.ElevenLabsClient_team_api;
 import com.fourformance.tts_vc_web.domain.entity.*;
@@ -207,14 +208,13 @@ public class VCService_team_api {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * 단일 소스 파일 변환 처리
-     */
     private VCDetailResDto processSingleSourceFile(
             VCDetailDto srcFile,
             MultipartFile originFile,
             String voiceId,
             Long memberId) {
+        String convertedFilePath = null;
+        File convertedFile = null;
         try {
             // Step 1: 소스 파일 URL 가져오기
             String sourceFileUrl = memberAudioMetaRepository.findAudioUrlsByAudioMetaIds(
@@ -224,28 +224,18 @@ public class VCService_team_api {
             LOGGER.info("[소스 파일 URL 조회] URL: " + sourceFileUrl);
 
             // Step 2: 변환 작업 수행
-            String convertedFilePath = elevenLabsClient.convertSpeechToSpeech(voiceId, sourceFileUrl);
+            convertedFilePath = elevenLabsClient.convertSpeechToSpeech(voiceId, sourceFileUrl);
             LOGGER.info("[파일 변환 완료] 파일 경로: " + convertedFilePath);
 
-            // Step 3.1: uploads 폴더 확인 및 생성
-            String uploadsDir = System.getProperty("user.home") + "/uploads/";
-            File uploadFolder = new File(uploadsDir);
-            if (!uploadFolder.exists()) {
-                LOGGER.info("[업로드 폴더 생성] 경로: " + uploadsDir);
-                uploadFolder.mkdirs(); // 폴더가 없으면 생성
-            }
+            // Step 3: 변환된 파일 읽기 및 S3 저장
+            convertedFile = new File(convertedFilePath);
+            byte[] convertedFileBytes = Files.readAllBytes(convertedFile.toPath());
 
-            // Step 3.2: 변환된 파일 읽기
-            byte[] convertedFileBytes = Files.readAllBytes(Paths.get(uploadsDir + convertedFilePath));
-            MultipartFile convertedMultipartFile = new ConvertedMultipartFile_team_api(
-                    convertedFileBytes,
-                    convertedFilePath,
-                    "audio/mpeg"
-            );
+            MultipartFile convertedMultipartFile = CommonFileUtils.convertFileToMultipartFile(convertedFile, convertedFile.getName());
             String vcOutputUrl = s3Service.uploadUnitSaveFile(convertedMultipartFile, memberId, srcFile.getProjectId(), srcFile.getId());
             LOGGER.info("[S3 업로드 완료] URL: " + vcOutputUrl);
 
-            // Step 4: 결과 DTO 생성
+            // Step 4: 결과 DTO 생성 및 반환
             return new VCDetailResDto(
                     srcFile.getId(),
                     srcFile.getProjectId(),
@@ -256,9 +246,20 @@ public class VCService_team_api {
             );
         } catch (Exception e) {
             LOGGER.severe("[소스 파일 변환 실패] " + e.getMessage());
+            e.printStackTrace();
             throw new BusinessException(ErrorCode.SERVER_ERROR);
+        } finally {
+            // 변환 파일 삭제 로직을 finally 블록에 추가하여 항상 실행되도록 함
+            if (convertedFile != null && convertedFile.exists()) {
+                if (!convertedFile.delete()) {
+                    LOGGER.warning("변환 파일 삭제 실패: " + convertedFile.getAbsolutePath());
+                } else {
+                    LOGGER.info("변환 파일 삭제 성공: " + convertedFilePath);
+                }
+            }
         }
     }
+
 
     /**
      * VC 프로젝트에 trg_voice_id 업데이트
