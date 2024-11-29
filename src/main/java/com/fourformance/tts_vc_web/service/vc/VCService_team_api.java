@@ -18,10 +18,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
@@ -48,6 +46,10 @@ public class VCService_team_api {
 
     /**
      * VC 프로젝트 처리 메서드
+     * 1. 멤버 검증
+     * 2. VC 프로젝트 저장 및 ID 반환
+     * 3. VC 디테일 정보 조회 및 처리
+     * 4. 프로젝트 상태 업데이트
      */
     public List<VCDetailResDto> processVCProject(VCSaveRequestDto VCSaveRequestDto, List<MultipartFile> files, Long memberId) {
         LOGGER.info("[VC 프로젝트 시작]");
@@ -206,9 +208,6 @@ public class VCService_team_api {
 
     /**
      * 단일 소스 파일 변환 처리
-     * - 개별 파일 변환 작업 수행
-     * - 변환된 파일을 S3에 업로드
-     * - 변환된 결과를 DTO로 반환
      */
     private VCDetailResDto processSingleSourceFile(
             VCDetailDto srcFile,
@@ -216,21 +215,16 @@ public class VCService_team_api {
             String voiceId,
             Long memberId) {
         try {
-            // Step 1: 소스 파일 URL 가져오기
             String sourceFileUrl = memberAudioMetaRepository.findAudioUrlsByAudioMetaIds(
                     srcFile.getMemberAudioMetaId(),
                     AudioType.VC_SRC
             );
             LOGGER.info("[소스 파일 URL 조회] URL: " + sourceFileUrl);
 
-            // Step 2: 변환 작업 수행 (예: ElevenLabs API 호출)
             String convertedFilePath = elevenLabsClient.convertSpeechToSpeech(voiceId, sourceFileUrl);
             LOGGER.info("[파일 변환 완료] 파일 경로: " + convertedFilePath);
 
-            // Step 3: 변환된 파일 읽기 및 S3 저장
-            Path convertedFile = Paths.get(System.getProperty("user.home") + "/uploads/" + convertedFilePath);
-            byte[] convertedFileBytes = Files.readAllBytes(convertedFile);
-
+            byte[] convertedFileBytes = Files.readAllBytes(Paths.get(System.getProperty("user.home") + "/uploads/" + convertedFilePath));
             MultipartFile convertedMultipartFile = new ConvertedMultipartFile_team_api(
                     convertedFileBytes,
                     convertedFilePath,
@@ -239,15 +233,6 @@ public class VCService_team_api {
             String vcOutputUrl = s3Service.uploadUnitSaveFile(convertedMultipartFile, memberId, srcFile.getProjectId(), srcFile.getId());
             LOGGER.info("[S3 업로드 완료] URL: " + vcOutputUrl);
 
-            // Step 4: 변환 파일 삭제
-            try {
-                Files.deleteIfExists(convertedFile);
-                LOGGER.info("변환 파일 삭제 성공: " + convertedFilePath);
-            } catch (IOException e) {
-                LOGGER.warning("변환 파일 삭제 실패: " + convertedFilePath + ", 이유: " + e.getMessage());
-            }
-
-            // Step 5: 변환 결과 DTO 생성 및 반환
             return new VCDetailResDto(
                     srcFile.getId(),
                     srcFile.getProjectId(),
@@ -255,6 +240,7 @@ public class VCService_team_api {
                     srcFile.getUnitScript(),
                     sourceFileUrl,
                     List.of(vcOutputUrl)
+
             );
         } catch (Exception e) {
             LOGGER.severe("[소스 파일 변환 실패] " + e.getMessage());
@@ -262,12 +248,8 @@ public class VCService_team_api {
         }
     }
 
-
-
-
     /**
      * VC 프로젝트에 trg_voice_id 업데이트
-     * - 변환된 Voice ID를 프로젝트에 저장
      */
     private void updateProjectTargetVoiceId(Long projectId, String trgVoiceId) {
         VCProject vcProject = vcProjectRepository.findById(projectId)
@@ -279,20 +261,15 @@ public class VCService_team_api {
 
     /**
      * VC 프로젝트 상태 업데이트
-     * - 모든 디테일의 처리 상태를 기반으로 프로젝트의 최종 API 상태 업데이트
      */
     private void updateProjectStatus(Long projectId) {
         List<VCDetail> details = vcDetailRepository.findByVcProject_Id(projectId);
         if (details.isEmpty()) {
             throw new BusinessException(ErrorCode.VC_DETAIL_NOT_FOUND);
         }
-
-        // 상태 추적
         boolean hasFailure = false;
         boolean allSuccess = true;
-
         for (VCDetail detail : details) {
-            // 각 디테일의 API 상태를 확인
             List<APIStatus> apiStatuses = detail.getApiStatuses();
             if (apiStatuses.stream().anyMatch(status -> status.getApiUnitStatusConst() == APIUnitStatusConst.FAILURE)) {
                 hasFailure = true;
@@ -303,8 +280,6 @@ public class VCService_team_api {
                 allSuccess = false;
             }
         }
-
-        // 프로젝트 상태를 업데이트
         VCProject project = vcProjectRepository.findById(projectId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.PROJECT_NOT_FOUND));
         if (hasFailure) {
@@ -319,23 +294,17 @@ public class VCService_team_api {
     }
 
     /**
-     * 업로드된 파일에서 특정 이름의 파일 찾기
-     * - 입력받은 파일 리스트에서 지정된 이름과 일치하는 파일 반환
+     * 업로드한 파일에서 파일 이름 찾기
      */
     private MultipartFile findMultipartFileByName(List<MultipartFile> files, String fileName) {
         if (fileName == null) {
             LOGGER.warning("[파일 찾기 실패] 파일 이름이 null입니다.");
             return null;
         }
-
-        // 파일 이름 단순화 (디렉토리 제거)
         String simpleFileName = fileName.substring(fileName.lastIndexOf("/") + 1);
-
-        // 파일 이름이 일치하는 파일 검색
         return files.stream()
                 .filter(file -> file.getOriginalFilename().equals(simpleFileName))
                 .findFirst()
                 .orElse(null);
     }
 }
-
