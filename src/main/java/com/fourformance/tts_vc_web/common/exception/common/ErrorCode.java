@@ -153,8 +153,8 @@ public enum ErrorCode {
     // 7000번대 코드 : 작업 큐 관련 예외
     UNKNOWN_TASK_TYPE(6000, HttpStatus.NOT_FOUND, "작업 유형을 알 수 없습니다."),
 
-    
 
+    
 
     // 9999 : 테스트용 커스텀 예외
     TEST_ERROR(9999, HttpStatus.BAD_REQUEST, "테스트용 커스텀 예외입니다."),
