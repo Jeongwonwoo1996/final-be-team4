@@ -11,8 +11,12 @@ public class TaskConsumer {
     public void handleTTSTask(String message) {
         System.out.println("TTS audio task : " + message);
 
-        // TTS 생성 로직 구현
+        // 작업 상태 update
+
+
+        // TTS 생성 로직
         try{
+
 
         }catch(Exception e){
             // 실패 상태로 업데이트
