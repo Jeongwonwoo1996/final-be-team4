@@ -66,4 +66,4 @@ jobs:
 
       # 7. Gradle 테스트 실행
       - name: Run Gradle tests
-        run: ./gradlew test
+        run: ./gradlew test --debug
