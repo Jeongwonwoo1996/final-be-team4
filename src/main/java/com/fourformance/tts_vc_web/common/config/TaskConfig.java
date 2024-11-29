@@ -10,6 +10,7 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class TaskConfig {
+    // 승민님
 
     public static final String EXCHANGE_NAME = "audioTaskExchange";
     public static final String TTS_QUEUE     = "audioTTSQueue";
