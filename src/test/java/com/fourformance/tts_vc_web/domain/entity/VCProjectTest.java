@@ -37,7 +37,7 @@ class VCProjectTest {
 
 
     public Member createTestMember() {
-        Member member = Member.createMember("aaa@aaa.com", "1234","imsi",0, LocalDateTime.now(),"01012341234");
+        Member member = Member.createMember("aaa@aaa.com", "1234","imsi",0, LocalDateTime.now(),"01012341234",true);
 
         return member;
     }

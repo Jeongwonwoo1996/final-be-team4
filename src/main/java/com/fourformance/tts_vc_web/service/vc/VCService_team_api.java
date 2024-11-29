@@ -1,5 +1,6 @@
 package com.fourformance.tts_vc_web.service.vc;
 
+
 import com.fourformance.tts_vc_web.common.constant.APIStatusConst;
 import com.fourformance.tts_vc_web.common.constant.APIUnitStatusConst;
 import com.fourformance.tts_vc_web.common.constant.AudioType;
@@ -8,11 +9,10 @@ import com.fourformance.tts_vc_web.common.exception.common.ErrorCode;
 import com.fourformance.tts_vc_web.common.util.ConvertedMultipartFile_team_api;
 import com.fourformance.tts_vc_web.common.util.ElevenLabsClient_team_api;
 import com.fourformance.tts_vc_web.domain.entity.*;
-import com.fourformance.tts_vc_web.domain.entity.Member;
-import com.fourformance.tts_vc_web.domain.entity.MemberAudioMeta;
-import com.fourformance.tts_vc_web.domain.entity.VCDetail;
-import com.fourformance.tts_vc_web.domain.entity.VCProject;
-import com.fourformance.tts_vc_web.dto.vc.*;
+import com.fourformance.tts_vc_web.dto.vc.TrgAudioFileRequestDto;
+import com.fourformance.tts_vc_web.dto.vc.VCDetailDto;
+import com.fourformance.tts_vc_web.dto.vc.VCDetailResDto;
+import com.fourformance.tts_vc_web.dto.vc.VCSaveRequestDto;
 import com.fourformance.tts_vc_web.repository.*;
 import com.fourformance.tts_vc_web.service.common.S3Service;
 import lombok.RequiredArgsConstructor;
@@ -52,7 +52,7 @@ public class VCService_team_api {
      * 3. VC 디테일 정보 조회 및 처리
      * 4. 프로젝트 상태 업데이트
      */
-    public List<VCDetailResDto> processVCProject(VCSaveDto vcSaveDto, List<MultipartFile> files, Long memberId) {
+    public List<VCDetailResDto> processVCProject(VCSaveRequestDto VCSaveRequestDto, List<MultipartFile> files, Long memberId) {
         LOGGER.info("[VC 프로젝트 시작]");
 
         // Step 1: 멤버 검증
@@ -60,7 +60,7 @@ public class VCService_team_api {
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
         // Step 2: VC 프로젝트 저장 및 ID 반환
-        Long projectId = vcService.saveVCProject(vcSaveDto, files, member);
+        Long projectId = vcService.saveVCProject(VCSaveRequestDto, files, member);
         if (projectId == null) {
             throw new BusinessException(ErrorCode.PROJECT_NOT_FOUND);
         }
@@ -85,8 +85,9 @@ public class VCService_team_api {
         LOGGER.info("[타겟 오디오 조회 완료] 오디오 ID: " + memberAudio.getId());
 
         // Step 6: 타겟 오디오로 Voice ID 생성
-//        String voiceId = processTargetFiles(vcSaveDto.getTrgFiles(), memberAudio); // 여기도 에러해결하려고 "유람"이 아래에 문장을 추가했는데요.. dto해결하시면 해당 줄 주석 푸시고 아래 줄 삭제해주세요...
-        String voiceId = processTargetFiles(vcSaveDto.getTrgFile(), memberAudio); // 이거 삭제하시면 됩니다
+
+        String voiceId = processTargetFiles(VCSaveRequestDto.getTrgFiles(), memberAudio);
+
         LOGGER.info("[Voice ID 생성 완료] Voice ID: " + voiceId);
 
         // Step 7: VC 프로젝트에 trg_voice_id 업데이트
@@ -105,7 +106,7 @@ public class VCService_team_api {
     /**
      * 타겟 오디오 파일 처리 및 Voice ID 생성 -> 월 한도 돌아오면 사용
      */
-//    private String processTargetFiles(List<TrgAudioFileDto> trgFiles, MemberAudioMeta memberAudio) {
+//    private String processTargetFiles(List<TrgAudioFileRequestDto> trgFiles, MemberAudioMeta memberAudio) {
 //        if (trgFiles == null || trgFiles.isEmpty()) {
 //            throw new BusinessException(ErrorCode.FILE_PROCESSING_ERROR);
 //        }
@@ -136,30 +137,8 @@ public class VCService_team_api {
     /**
      * 타겟 오디오 파일 처리 및 Voice ID 생성 ->  월 한도 제한으로 하드코딩 함
      */
-    private String processTargetFiles(List<TrgAudioFileDto> trgFiles, MemberAudioMeta memberAudio) {
+    private String processTargetFiles(List<TrgAudioFileRequestDto> trgFiles, MemberAudioMeta memberAudio) {
         if (trgFiles == null || trgFiles.isEmpty()) {
-            throw new BusinessException(ErrorCode.FILE_PROCESSING_ERROR);
-        }
-        try {
-            // 하드코딩된 Voice ID 사용
-            String voiceId = "DNSy71aycodz7FWtd91e"; // 테스트용 하드코딩
-            LOGGER.info("[Voice ID 하드코딩 적용] Voice ID: " + voiceId);
-
-            // Voice ID를 MemberAudioMeta에 업데이트
-            memberAudio.update(voiceId);
-            memberAudioMetaRepository.save(memberAudio);
-            LOGGER.info("[MemberAudioMeta 업데이트 완료] Voice ID: " + voiceId);
-
-            return voiceId;
-        } catch (Exception e) {
-            LOGGER.severe("[타겟 파일 처리 실패] " + e.getMessage());
-            throw new BusinessException(ErrorCode.FILE_PROCESSING_ERROR);
-        }
-    }
-
-    // 에러 해결하려고 "유람"이 오버로딩으로 메서드 추가했는데요.. dto 수정하시면 이 메서드 삭제해주세요 => 유람을 직접 불러주세요..!
-    private String processTargetFiles(TrgAudioFileDto trgFiles, MemberAudioMeta memberAudio) {
-        if (trgFiles == null ) {
             throw new BusinessException(ErrorCode.FILE_PROCESSING_ERROR);
         }
         try {
@@ -332,3 +311,4 @@ public class VCService_team_api {
                 .orElse(null);
     }
 }
+
