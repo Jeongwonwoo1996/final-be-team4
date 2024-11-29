@@ -19,5 +19,5 @@ public class TTSSaveDto {
     private Float globalPitch;
     private Float globalVolume;
 
-    private List<TTSDetailDto> ttsDetails;
+    private List<TTSSaveDetailDto> ttsDetails;
 }

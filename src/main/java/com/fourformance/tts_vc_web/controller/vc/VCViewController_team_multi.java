@@ -20,7 +20,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.servlet.view.RedirectView;
 
 import java.util.List;
 
@@ -41,8 +40,12 @@ public class VCViewController_team_multi {
             description = "VC TRG 오디오 리스트를 가져옵니다." )
     @GetMapping("/trg-audio")
     public ResponseDto trgAudioLoad(HttpSession session) {
-        Long memberId = (Long) session.getAttribute("member_id");
-        memberId = 1L;
+        if (session.getAttribute("memberId") == null) {
+            throw new BusinessException(ErrorCode.MEMBER_NOT_FOUND);
+        }
+
+        Long memberId = (Long) session.getAttribute("memberId");
+
         List<TrgAudioDto> trgAudioDtoList;
 
         if (memberId != null) {
@@ -55,7 +58,7 @@ public class VCViewController_team_multi {
     }
 
 
-        // VC 상태 로드 메서드
+    // VC 상태 로드 메서드
     @Operation(
             summary = "VC 상태 로드",
             description = "VC 프로젝트 상태를 가져옵니다." )
@@ -91,12 +94,12 @@ public class VCViewController_team_multi {
                     "<br>- 사용자가 s3에 업로드한 오디오를 선택하면 MultipartFile의 값은 null로 보냅니다." +
                     "<br>- 파일(MultipartFile)과 메타데이터(JSON)를 동시에 전송해야 합니다." )
     @PostMapping(value = "/save", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public RedirectView saveVCProject(
+    public ResponseDto saveVCProject(
             @RequestPart(value = "file", required = false) List<MultipartFile> files,
             @RequestPart("metadata") VCSaveDto vcSaveDto, HttpSession session) {
-        // 세션에 임의의 memberId 설정
+        // 세션에 memberId 설정
         if (session.getAttribute("memberId") == null) {
-            session.setAttribute("memberId", 1L);
+            throw new BusinessException(ErrorCode.MEMBER_NOT_FOUND);
         }
 
         Long memberId = (Long) session.getAttribute("memberId");
@@ -109,7 +112,8 @@ public class VCViewController_team_multi {
         Long projectId = vcService.saveVCProject(vcSaveDto, files, member);
 
 
-        return new RedirectView("/vc/" + projectId); // TTS 상태 로드 URL로 리다이렉트
+        ResponseDto vcLoadDto = vcLoad(projectId);
+        return DataResponseDto.of(vcLoadDto, "VC 프로젝트가 성공적으로 저장되었습니다.");
     }
 
 
