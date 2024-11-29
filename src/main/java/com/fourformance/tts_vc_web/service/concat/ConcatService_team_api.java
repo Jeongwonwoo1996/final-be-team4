@@ -15,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import net.bramp.ffmpeg.FFmpeg;
 import net.bramp.ffmpeg.FFprobe;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -49,6 +50,7 @@ public class ConcatService_team_api {
     /**
      * 서비스 초기화 메서드: 업로드 디렉토리를 생성하고 FFmpeg 경로를 검증합니다.
      */
+    @Profile("!test")
     @PostConstruct
     public void initialize() {
         // 업로드 디렉토리 생성
