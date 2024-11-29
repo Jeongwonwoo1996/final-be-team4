@@ -18,7 +18,7 @@ public class TestController {
     // 성공 케이스 API
     @GetMapping("/test/success")
     public ResponseDto testSuccess() {
-        Member member = Member.createMember("abc@abc.com","pwd123:","철수",0, LocalDateTime.now(),"010123123");
+        Member member = Member.createMember("abc@abc.com","pwd123:","철수",0, LocalDateTime.now(),"010123123",true);
         MemberTestDto memberDto = MemberTestDto.createMemberDto(member);
         return DataResponseDto.of(memberDto);  // DataResponseDto 사용
     }
