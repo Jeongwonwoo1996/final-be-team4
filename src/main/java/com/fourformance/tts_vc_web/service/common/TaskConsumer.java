@@ -1,11 +1,15 @@
 package com.fourformance.tts_vc_web.service.common;
 
 import com.fourformance.tts_vc_web.common.config.TaskConfig;
+import com.fourformance.tts_vc_web.domain.entity.TaskHistory;
+import com.fourformance.tts_vc_web.repository.TaskHistoryRepository;
+import com.fourformance.tts_vc_web.repository.TaskRepository;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 
 @Component
 public class TaskConsumer {
+
 
     @RabbitListener(queues = TaskConfig.TTS_QUEUE)
     public void handleTTSTask(String message) {
