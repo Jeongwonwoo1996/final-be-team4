@@ -13,11 +13,9 @@ import com.fourformance.tts_vc_web.service.tts.TTSService_team_multi;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.servlet.http.HttpSession;
 import java.util.List;
-import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.view.RedirectView;
+
 
 @RestController
 @RequestMapping("/tts")
@@ -58,11 +56,11 @@ public class TTSViewController_team_multi {
             summary = "TTS 상태 저장",
             description = "TTS 프로젝트 상태를 저장합니다." )
     @PostMapping("/save")
-    public RedirectView ttsSave(@RequestBody TTSSaveDto ttsSaveDto, HttpSession session) {
+    public ResponseDto ttsSave(@RequestBody TTSSaveDto ttsSaveDto, HttpSession session) {
         try {
-            // 세션에 임의의 memberId 설정
+            // 세션에 memberId 설정
             if (session.getAttribute("memberId") == null) {
-                session.setAttribute("memberId", 1L);
+                throw new BusinessException(ErrorCode.MEMBER_NOT_FOUND);
             }
 
             Long memberId = (Long) session.getAttribute("memberId");
@@ -76,8 +74,10 @@ public class TTSViewController_team_multi {
                 // projectId가 존재하면, 기존 프로젝트 업데이트
                 projectId = ttsService.updateProject(ttsSaveDto, memberId);
             }
-            // 상태 저장 후 리다이렉트
-            return new RedirectView("/tts/" + projectId); // TTS 상태 로드 URL로 리다이렉트
+            // 상태 저장 후 결과 반환
+            ResponseDto ttsLoadDto = ttsLoad(projectId);
+            return DataResponseDto.of(ttsLoadDto, "TTS 프로젝트가 성공적으로 저장되었습니다.");
+
         } catch (BusinessException e) {
             throw e;  // 기존의 BusinessException 그대로 던짐
         } catch (Exception e) {
