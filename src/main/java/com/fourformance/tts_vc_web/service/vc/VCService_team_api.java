@@ -214,40 +214,35 @@ public class VCService_team_api {
             MultipartFile originFile,
             String voiceId,
             Long memberId) {
-        File tempFile = null; // 임시 파일 객체 선언
         try {
-            // Step 1: 소스 파일 URL 가져오기
             String sourceFileUrl = memberAudioMetaRepository.findAudioUrlsByAudioMetaIds(
                     srcFile.getMemberAudioMetaId(),
                     AudioType.VC_SRC
             );
             LOGGER.info("[소스 파일 URL 조회] URL: " + sourceFileUrl);
 
-            // Step 2: 변환 작업 수행 (예: ElevenLabs API 호출)
+            // 변환 작업 수행
             String convertedFilePath = elevenLabsClient.convertSpeechToSpeech(voiceId, sourceFileUrl);
             LOGGER.info("[파일 변환 완료] 파일 경로: " + convertedFilePath);
 
-            // Step 3: 변환된 파일 읽기
-            tempFile = new File(System.getProperty("user.home") + "/uploads/" + convertedFilePath);
-            byte[] convertedFileBytes = Files.readAllBytes(tempFile.toPath());
+            // 변환된 파일을 임시 파일로 저장
+            File tempFile = File.createTempFile("vc_audio_", ".mp3");
+            Files.write(tempFile.toPath(), Files.readAllBytes(Paths.get(System.getProperty("user.home") + "/uploads/" + convertedFilePath)));
 
-            // Step 4: 변환된 파일을 MultipartFile로 변환
+            // S3 업로드
             MultipartFile convertedMultipartFile = new ConvertedMultipartFile_team_api(
-                    convertedFileBytes,
-                    convertedFilePath,
+                    Files.readAllBytes(tempFile.toPath()),
+                    tempFile.getName(),
                     "audio/mpeg"
             );
-
-            // Step 5: S3에 업로드
-            String vcOutputUrl = s3Service.uploadUnitSaveFile(
-                    convertedMultipartFile,
-                    memberId,
-                    srcFile.getProjectId(),
-                    srcFile.getId()
-            );
+            String vcOutputUrl = s3Service.uploadUnitSaveFile(convertedMultipartFile, memberId, srcFile.getProjectId(), srcFile.getId());
             LOGGER.info("[S3 업로드 완료] URL: " + vcOutputUrl);
 
-            // Step 6: 변환 결과 DTO 생성 및 반환
+            // 작업 완료 후 임시 파일 삭제
+            if (!tempFile.delete()) {
+                LOGGER.warning("임시 파일 삭제 실패: " + tempFile.getAbsolutePath());
+            }
+
             return new VCDetailResDto(
                     srcFile.getId(),
                     srcFile.getProjectId(),
@@ -259,17 +254,9 @@ public class VCService_team_api {
         } catch (Exception e) {
             LOGGER.severe("[소스 파일 변환 실패] " + e.getMessage());
             throw new BusinessException(ErrorCode.SERVER_ERROR);
-        } finally {
-            // Step 7: 임시 파일 삭제
-            if (tempFile != null && tempFile.exists()) {
-                if (tempFile.delete()) {
-                    LOGGER.info("[임시 파일 삭제 완료] 파일 경로: " + tempFile.getAbsolutePath());
-                } else {
-                    LOGGER.warning("[임시 파일 삭제 실패] 파일 경로: " + tempFile.getAbsolutePath());
-                }
-            }
         }
     }
+
 
 
     /**
