@@ -5,12 +5,16 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.Instant;
+import java.util.logging.Logger;
+
+import static org.hibernate.sql.results.LoadingLogger.LOGGER;
 
 @Component
 public class ElevenLabsClient_team_api {
@@ -107,9 +111,14 @@ public class ElevenLabsClient_team_api {
             }
 
             // 변환된 파일 저장 경로 결정
-            String fileName = Instant.now().toEpochMilli() + "_converted.mp3";
-            Files.write(Paths.get(System.getProperty("user.home") + "/uploads/" + fileName), response.body().bytes());
-            return fileName;
+            File tempFile = File.createTempFile("vc_audio_", ".mp3");
+            try (FileOutputStream fos = new FileOutputStream(tempFile)) {
+                fos.write(response.body().bytes());
+            }
+
+            LOGGER.info("[파일 변환 완료] 파일 경로: " + tempFile.getAbsolutePath());
+
+            return tempFile.getAbsolutePath();
         }
     }
 
