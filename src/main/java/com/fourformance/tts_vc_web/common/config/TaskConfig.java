@@ -58,7 +58,8 @@ public class TaskConfig {
     // Dead Letter Queue 생성
     @Bean(name = "dlq")
     public Queue dlq() {
-        return QueueBuilder.durable(DEAD_LETTER_QUEUE).build();
+        return QueueBuilder.durable(DEAD_LETTER_QUEUE)
+                .build();
     }
 
     // Task Queues Binding 설정
