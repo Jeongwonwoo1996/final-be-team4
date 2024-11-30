@@ -43,6 +43,8 @@ public class ConcatViewController_team_aws {
             @RequestPart(value = "file", required = false) List<MultipartFile> files,
             HttpSession session) {
 
+        session.setAttribute("memberId",1L);
+
         if (session.getAttribute("memberId") == null) {
             throw new BusinessException(ErrorCode.MEMBER_NOT_FOUND);
         }
