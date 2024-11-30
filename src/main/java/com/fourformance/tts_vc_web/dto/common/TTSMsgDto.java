@@ -13,9 +13,14 @@ import java.util.List;
 @Data
 @Builder
 public class TTSMsgDto {
-    private Long taskId; // 작업을 추적하고 상태를 관리하기 위함
-    private Long memberId; // 요청한 회원 id 필요한가...
-    private TTSRequestDetailDto ttsDetail;
-    private LocalDateTime timestamp; // 요청시간
+    private Long taskId;            // 작업을 추적하고 상태를 관리하기 위함
+    private Long memberId;          // 요청한 회원 id 필요한가...
+    private Long detailId;          // 디테일 ID
+    private Long projectId;         // 프로젝트 ID
+    private String unitScript;      // 단위 스크립트
+    private Float unitSpeed;        // 단위 속도
+    private Float unitPitch;        // 단위 피치
+    private Float unitVolume;       // 단위 볼륨
+    private Long unitVoiceStyleId;  // 스타일 ID
 
 }
