@@ -22,7 +22,7 @@ public class Task extends BaseEntity {
     @Column(name = "task_id")
     private Long id;
 
-    @OneToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "project_id")
     private Project project;
 
