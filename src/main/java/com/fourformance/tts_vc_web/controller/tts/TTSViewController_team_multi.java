@@ -82,9 +82,10 @@ public class TTSViewController_team_multi {
 
         } catch (BusinessException e) {
             throw e;  // 기존의 BusinessException 그대로 던짐
-        } catch (Exception e) {
-            throw new BusinessException(ErrorCode.SERVER_ERROR);  // 일반 예외를 서버 에러로 처리
         }
+//        catch (Exception e) {
+//            throw new BusinessException(ErrorCode.SERVER_ERROR);  // 일반 예외를 서버 에러로 처리
+//        }
     }
 
     // TTS 프로젝트 삭제
