@@ -18,15 +18,11 @@ import com.fourformance.tts_vc_web.repository.OutputAudioMetaRepository;
 import com.fourformance.tts_vc_web.repository.ProjectRepository;
 import com.fourformance.tts_vc_web.repository.workspace.OutputAudioMetaRepositoryCustomImpl;
 import com.fourformance.tts_vc_web.service.common.S3Service;
-
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -181,8 +177,6 @@ public class WorkspaceService {
 
     // =========================  프로젝트 목록 ==========================
 
-
-
     // sojeong 임시 메서드 ==========================시작===============================
 
     /**
@@ -202,9 +196,8 @@ public class WorkspaceService {
         String presignedUrl = s3Service.generatePresignedUrl(bucketRoute);
         dto.setDownloadLink(presignedUrl);
 
-
         // 프로젝트 타입에 따른 설정
-        switch(export.getProjectType().toUpperCase()) {
+        switch (export.getProjectType().toUpperCase()) {
             case "TTS":
                 dto.setProjectType("TTS");
                 dto.setProjectName(export.getProjectName());
@@ -238,7 +231,8 @@ public class WorkspaceService {
         }
 
         // Repository에서 ExportListDto 리스트 조회
-        List<ExportListDto> exportList = outputAudioMetaRepositoryCustomImpl.findExportHistoryBySearchCriteria(memberId, keyword);
+        List<ExportListDto> exportList = outputAudioMetaRepositoryCustomImpl.findExportHistoryBySearchCriteria(memberId,
+                keyword);
 
         // ExportListDto 리스트를 ExportWithDownloadLinkDto 리스트로 변환
         List<ExportWithDownloadLinkDto> exportWithLinks = new ArrayList<>();
@@ -250,21 +244,21 @@ public class WorkspaceService {
         return exportWithLinks;
     }
 
-    public Page<ExportWithDownloadLinkDto> getRecentExportsWithDownloadLink(Long memberId, String keyword, Pageable pageable) {
-        if (memberId == null) {
-            throw new BusinessException(ErrorCode.MEMBER_NOT_FOUND);
-        }
-
-        // Repository에서 Page<ExportListDto> 조회
-        Page<ExportListDto> exportListPage = outputAudioMetaRepositoryCustomImpl.findExportHistoryBySearchCriteria(memberId, keyword, pageable);
-
-        // ExportListDto -> ExportWithDownloadLinkDto 변환
-        List<ExportWithDownloadLinkDto> exportWithLinks = exportListPage.getContent().stream()
-                .map(this::mapToExportWithDownloadLinkDto)
-                .collect(Collectors.toList());
-
-        // Page<ExportWithDownloadLinkDto>로 반환
-        return new PageImpl<>(exportWithLinks, pageable, exportListPage.getTotalElements());
-    }
+//    public Page<ExportWithDownloadLinkDto> getRecentExportsWithDownloadLink(Long memberId, String keyword, Pageable pageable) {
+//        if (memberId == null) {
+//            throw new BusinessException(ErrorCode.MEMBER_NOT_FOUND);
+//        }
+//
+//        // Repository에서 Page<ExportListDto> 조회
+//        Page<ExportListDto> exportListPage = outputAudioMetaRepositoryCustomImpl.findExportHistoryBySearchCriteria(memberId, keyword, pageable);
+//
+//        // ExportListDto -> ExportWithDownloadLinkDto 변환
+//        List<ExportWithDownloadLinkDto> exportWithLinks = exportListPage.getContent().stream()
+//                .map(this::mapToExportWithDownloadLinkDto)
+//                .collect(Collectors.toList());
+//
+//        // Page<ExportWithDownloadLinkDto>로 반환
+//        return new PageImpl<>(exportWithLinks, pageable, exportListPage.getTotalElements());
+//    }
     // sojeong 임시 메서드 ==========================끝===============================
 }

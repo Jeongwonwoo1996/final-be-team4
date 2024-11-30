@@ -1,14 +1,10 @@
 package com.fourformance.tts_vc_web.dto.workspace;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fourformance.tts_vc_web.service.common.S3Service;
+import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
-
-import java.time.LocalDateTime;
 
 
 @Data
@@ -17,12 +13,12 @@ import java.time.LocalDateTime;
 public class ExportListDto {
 
     Long outputAudioMetaId;
-    String projectType;
-    String projectName;
     String fileName;
-    String script;
-    String unitStatus;
     String url; // generatedPresignedUrL로 만들어전달 // 버킷 루트로 전달예정.
+    String unitStatus;
+    String projectName;
+    String projectType;
+    String script;
     LocalDateTime createAt;
 
     @JsonIgnore
