@@ -152,6 +152,7 @@ public enum ErrorCode {
 
     // 7000번대 코드 : 작업 큐 관련 예외
     UNKNOWN_TASK_TYPE(7000, HttpStatus.NOT_FOUND, "작업 유형을 알 수 없습니다."),
+    JSON_PROCESSING_ERROR(7001, HttpStatus.BAD_REQUEST, "JSON 변환 중 오류 발생"),
 
 
 

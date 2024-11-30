@@ -4,17 +4,15 @@ import com.fourformance.tts_vc_web.dto.response.DataResponseDto;
 import com.fourformance.tts_vc_web.dto.response.ResponseDto;
 import com.fourformance.tts_vc_web.service.common.TaskProducer;
 import io.swagger.v3.oas.annotations.Operation;
+import lombok.RequiredArgsConstructor;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 @RequestMapping("/tasks")
+@RequiredArgsConstructor
 public class TaskController {
 
     private final TaskProducer taskProducer;
-
-    public TaskController(TaskProducer taskProducer) {
-        this.taskProducer = taskProducer;
-    }
 
     @PostMapping
     public String sendTask(@RequestParam String taskType, @RequestBody String message) {

@@ -83,7 +83,6 @@ public class TTSService_team_multi {
     public Long createNewProject(TTSSaveDto dto, Long memberId) {
 
         validateSaveDto(dto);
-
         VoiceStyle voiceStyle = null;
 
         // voiceStyleId가 null이 아닌 경우에만 조회 ( voiceStyleId에 null을 허용한다는 의미입니다. 보이스 스타일을 지정하지 않고 저장할 수 있으니까 )
@@ -96,10 +95,6 @@ public class TTSService_team_multi {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
-        // TTSDetailDto 리스트에 대한 unitSequence 검증
-        if (dto.getTtsDetails() != null) {
-            validateUnitSequence(dto.getTtsDetails());
-        }
 
         // TTSProject 생성
         TTSProject ttsProject = TTSProject.createTTSProject(
@@ -112,9 +107,13 @@ public class TTSService_team_multi {
                 dto.getGlobalVolume()
         );
 
-
         //tts 프로젝트 db에 저장
         ttsProject = ttsProjectRepository.save(ttsProject);
+
+        // TTSDetailDto 리스트에 대한 unitSequence 검증
+        if (dto.getTtsDetails() != null) {
+            validateUnitSequence(dto.getTtsDetails());
+        }
 
         // tts detail 저장
         if (dto.getTtsDetails() != null) {
@@ -147,10 +146,6 @@ public class TTSService_team_multi {
                     .orElseThrow(() -> new BusinessException(ErrorCode.NOT_EXISTS_VOICESTYLE)));
         }
 
-        // TTSDetailDto 리스트에 대한 unitSequence 검증
-        if (dto.getTtsDetails() != null) {
-            validateUnitSequence(dto.getTtsDetails());
-        }
 
         ttsProject.updateTTSProject(
                 dto.getProjectName(),
@@ -160,6 +155,11 @@ public class TTSService_team_multi {
                 dto.getGlobalPitch(),
                 dto.getGlobalVolume()
         );
+
+        // TTSDetailDto 리스트에 대한 unitSequence 검증
+        if (dto.getTtsDetails() != null) {
+            validateUnitSequence(dto.getTtsDetails());
+        }
 
         if (dto.getTtsDetails() != null) {
             for (TTSSaveDetailDto detailDto : dto.getTtsDetails()) {
@@ -187,21 +187,27 @@ public class TTSService_team_multi {
     // ttsDetail 생성 메서드
     private void createTTSDetail(TTSSaveDetailDto detailDto, TTSProject ttsProject) {
 
-        VoiceStyle voiceStyle = null;
+        VoiceStyle detailStyleId = null;
+
+
+
         // voiceStyleId가 null이 아닌 경우에만 조회 ( voiceStyleId에 null을 허용한다는 의미입니다. 보이스 스타일을 지정하지 않고 저장할 수 있으니까 )
         if (detailDto.getUnitVoiceStyleId() != null) {
-            voiceStyle = em.merge(voiceStyleRepository.findById(detailDto.getUnitVoiceStyleId())
+            detailStyleId = em.merge(voiceStyleRepository.findById(detailDto.getUnitVoiceStyleId())
                     .orElseThrow(() -> new BusinessException(ErrorCode.NOT_EXISTS_VOICESTYLE)));
-
+//            voiceStyle = voiceStyleRepository.findById(detailDto.getUnitVoiceStyleId())
+//                    .orElseThrow(() -> new BusinessException(ErrorCode.NOT_EXISTS_VOICESTYLE));
         }
+
 
         TTSDetail ttsDetail = TTSDetail.createTTSDetail(
                 ttsProject,
                 detailDto.getUnitScript(),
                 detailDto.getUnitSequence()
         );
+//        processTTSDetail(detailDto, ttsProject);
         ttsDetail.updateTTSDetail(
-                voiceStyle,
+                detailStyleId,
                 detailDto.getUnitScript(),
                 detailDto.getUnitSpeed(),
                 detailDto.getUnitPitch(),
@@ -215,9 +221,13 @@ public class TTSService_team_multi {
 
     // ttsDetail 업데이트 메서드
     private void processTTSDetail(TTSSaveDetailDto detailDto, TTSProject ttsProject) {
+        VoiceStyle detaolStyle = null;
 
-        VoiceStyle detailStyle = em.merge(voiceStyleRepository.findById(detailDto.getUnitVoiceStyleId())
-                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_EXISTS_PROJECT)));
+        // voiceStyleId가 null이 아닌 경우에만 조회 ( voiceStyleId에 null을 허용한다는 의미입니다. 보이스 스타일을 지정하지 않고 저장할 수 있으니까 )
+        if (detailDto.getUnitVoiceStyleId() != null) {
+            detaolStyle = em.merge(voiceStyleRepository.findById(detailDto.getUnitVoiceStyleId())
+                    .orElseThrow(() -> new BusinessException(ErrorCode.NOT_EXISTS_VOICESTYLE)));
+        }
 
         if (detailDto.getId() != null) {
             // 기존 TTSDetail 업데이트
@@ -229,7 +239,7 @@ public class TTSService_team_multi {
             }
 
             ttsDetail.updateTTSDetail(
-                    detailStyle,
+                    detaolStyle,
                     detailDto.getUnitScript(),
                     detailDto.getUnitSpeed(),
                     detailDto.getUnitPitch(),

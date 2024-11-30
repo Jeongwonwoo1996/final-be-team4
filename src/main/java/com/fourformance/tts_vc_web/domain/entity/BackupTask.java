@@ -37,7 +37,4 @@ public class BackupTask extends BaseEntity {
         backupTask.created_at = LocalDateTime.now();
         return backupTask;
     }
-
-
-
 }
