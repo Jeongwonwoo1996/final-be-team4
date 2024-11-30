@@ -44,7 +44,7 @@ class APIStatusTest {
     VCDetailRepository vcDetailRepository;
 
     public Member createTestMember() {
-        Member member = Member.createMember("test@test.com", "1234", "testName", 0, LocalDateTime.now(), "010-1234-1234");
+        Member member = Member.createMember("test@test.com", "1234", "testName", 0, LocalDateTime.now(), "010-1234-1234",true);
         return member;
     }
 
