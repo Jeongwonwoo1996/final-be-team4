@@ -32,7 +32,7 @@ public class Task extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private TaskStatusConst taskStatusConst = TaskStatusConst.NEW;
 
-    private String taskData;
+    private String taskData; //작업(Task)을 실행하는 데 필요한 구체적인 데이터
     private String trackingId;
     private String resultMsg;
 
