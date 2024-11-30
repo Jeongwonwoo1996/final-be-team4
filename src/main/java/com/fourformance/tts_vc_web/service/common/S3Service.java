@@ -387,11 +387,14 @@ public class S3Service {
     // ================================= 버킷 오디오 삭제 구현중 =============================================
 
 
-    // 프로젝트 삭제했을때 실행하는 명령어 ( 삭제한 프로젝트에 포함된 모든 오디오 버킷에서 삭제 및 메타 디비 업데이트 )
+    // 프로젝트 삭제했을때 실행하는 메서드 ( 삭제한 프로젝트에 포함된 모든 오디오 버킷에서 삭제 및 메타 디비 업데이트 )
     public void deleteAudioPerProject(Long projectId) {
 
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.PROJECT_NOT_FOUND));
+
+        // project isDeleted 업데이트
+        project.deletedAt();
 
         String projectType = null;
 
@@ -413,20 +416,53 @@ public class S3Service {
 
         if (project instanceof TTSProject) {
             deleteDirectoryFromS3(outputAudioRoute);
+
+            deleteTTSDetails(project);
         } else if (project instanceof VCProject) {
             deleteDirectoryFromS3(vcTrgAudioRoute);
             deleteDirectoryFromS3(vcSRCAudioRoute);
             deleteDirectoryFromS3(outputAudioRoute);
+
+            deleteVCDetails(project);
         } else if (project instanceof ConcatProject) {
             deleteDirectoryFromS3(concatAudioRoute);
             deleteDirectoryFromS3(outputAudioRoute);
+
+            deleteConcatDetails(project);
         }
 
         // 멤버오디오메타디비 업데이트
         memberAudioMetaUpdate(projectId);
 
-        // 아웃풋오디오메타딥 업데이트
+        // 아웃풋오디오메타디비 업데이트
         outputAudioMetaUpdate(projectId);
+    }
+
+    private void deleteTTSDetails(Project project) {
+        List<Long> ids = ttsDetailRepository.findDetailIdsByProjectId(project.getId());
+        for (Long id : ids) {
+            TTSDetail ttsDetail = ttsDetailRepository.findById(id).orElseThrow();
+            ttsDetail.deleteTTSDetail();
+            ttsDetailRepository.save(ttsDetail);
+        }
+    }
+
+    private void deleteVCDetails(Project project) {
+        List<VCDetail> details = vcDetailRepository.findAllByProjectId(project.getId());
+        for (VCDetail detail : details) {
+            VCDetail vcDetail = vcDetailRepository.findById(detail.getId()).orElseThrow();
+            vcDetail.markAsDeleted();
+            vcDetailRepository.save(vcDetail);
+        }
+    }
+
+    private void deleteConcatDetails(Project project) {
+        List<ConcatDetail> details = concatDetailRepository.findAllByProjectId(project.getId());
+        for (ConcatDetail detail : details) {
+            ConcatDetail concatDetail = concatDetailRepository.findById(detail.getId()).orElseThrow();
+            concatDetail.deleteConcatDetail();
+            concatDetailRepository.save(concatDetail);
+        }
     }
 
     // DB update로직
@@ -496,11 +532,9 @@ public class S3Service {
         }
     }
 
-    // == 유닛 삭제 구현중 == == 유닛 삭제 구현중 == == 유닛 삭제 구현중 == == 유닛 삭제 구현중 == == 유닛 삭제 구현중 == == 유닛 삭제 구현중 == == 유닛 삭제 구현중 ==
-
 
     // 오디오 개별 삭제 (생성된 오디오)
-    public void deleteAudioPerUnit(Long outputAudioMetaId) {
+    public void deleteAudioOutput(Long outputAudioMetaId) {
 
         OutputAudioMeta audio = outputAudioMetaRepository.getById(outputAudioMetaId);
 
@@ -510,7 +544,19 @@ public class S3Service {
 
         audio.deleteOutputAudioMeta();
         outputAudioMetaRepository.save(audio);
+    }
 
+    // 오디오 개별 삭제 (멤버 오디오)
+    public void deleteAudioMember(Long memberAudioMetaId) {
+
+        MemberAudioMeta audio = memberAudioMetaRepository.getById(memberAudioMetaId);
+
+        String bucketRoute = audio.getBucketRoute();
+
+        deleteDirectoryFromS3(bucketRoute);
+
+        audio.delete();
+        memberAudioMetaRepository.save(audio);
     }
 
 
