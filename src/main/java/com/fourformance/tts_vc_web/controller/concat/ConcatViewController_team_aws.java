@@ -9,6 +9,7 @@ import com.fourformance.tts_vc_web.dto.response.DataResponseDto;
 import com.fourformance.tts_vc_web.dto.response.ResponseDto;
 import com.fourformance.tts_vc_web.repository.MemberRepository;
 import com.fourformance.tts_vc_web.service.common.ProjectService_team_aws;
+import com.fourformance.tts_vc_web.service.common.S3Service;
 import com.fourformance.tts_vc_web.service.concat.ConcatService_team_aws;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.servlet.http.HttpSession;
@@ -31,6 +32,7 @@ public class ConcatViewController_team_aws {
     private final ConcatService_team_aws concatService;
     private final ProjectService_team_aws projectService;
     private final MemberRepository memberRepository;
+    private final S3Service s3Service;
 
 
     // Concat 상태 저장 메서드
@@ -73,6 +75,7 @@ public class ConcatViewController_team_aws {
 
         // 프로젝트 삭제
         projectService.deleteProject(projectId);
+        s3Service.deleteAudioPerProject(projectId);
 
         // 작업 상태 : Terminated (종료)
         return DataResponseDto.of("", "Concat 프로젝트가 정상적으로 삭제되었습니다.");
@@ -85,12 +88,20 @@ public class ConcatViewController_team_aws {
     @PostMapping("/delete/details")
     public ResponseDto deleteConcatDetails(@RequestBody DeleteReqDto deleteDto) {
 
-
         // Concat 선택된 항목 삭제
-        if(deleteDto.getDetailIds() != null) {  projectService.deleteSelectedDetails(deleteDto.getDetailIds()); }
+        if (deleteDto.getDetailIds() != null) {
+            projectService.deleteSelectedDetails(deleteDto.getDetailIds());
+        }
 
         // 선택된 오디오 삭제
-        if(deleteDto.getAudioIds() != null ) {  projectService.deleteAudioIds(deleteDto.getAudioIds());}
+        if (deleteDto.getAudioIds() != null) {
+            projectService.deleteAudioIds(deleteDto.getAudioIds());
+        }
+
+        // 버킷에서 오디오 파일 삭제
+        for (Long audioId : deleteDto.getAudioIds()) {
+            s3Service.deleteAudioMember(audioId);
+        }
 
         return DataResponseDto.of("", "선택된 모든 항목이 정상적으로 삭제되었습니다.");
     }

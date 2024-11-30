@@ -500,7 +500,7 @@ public class S3Service {
 
 
     // 오디오 개별 삭제 (생성된 오디오)
-    public void deleteAudioPerUnit(Long outputAudioMetaId) {
+    public void deleteAudioOutput(Long outputAudioMetaId) {
 
         OutputAudioMeta audio = outputAudioMetaRepository.getById(outputAudioMetaId);
 
@@ -510,7 +510,19 @@ public class S3Service {
 
         audio.deleteOutputAudioMeta();
         outputAudioMetaRepository.save(audio);
+    }
 
+    // 오디오 개별 삭제 (멤버 오디오)
+    public void deleteAudioMember(Long memberAudioMetaId) {
+
+        MemberAudioMeta audio = memberAudioMetaRepository.getById(memberAudioMetaId);
+
+        String bucketRoute = audio.getBucketRoute();
+
+        deleteDirectoryFromS3(bucketRoute);
+
+        audio.delete();
+        memberAudioMetaRepository.save(audio);
     }
 
 
