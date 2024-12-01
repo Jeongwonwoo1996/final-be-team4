@@ -39,7 +39,7 @@ class MemberAudioVCTest {
 
     // Member 객체를 한 번만 생성하여 공유
     public Member createTestMember() {
-        Member member = Member.createMember("aaa@aaa.com", "1234", "imsi", 0, LocalDateTime.now(), "01012341234");
+        Member member = Member.createMember("aaa@aaa.com", "1234", "imsi", 0, LocalDateTime.now(), "01012341234",true);
         return member;
     }
 

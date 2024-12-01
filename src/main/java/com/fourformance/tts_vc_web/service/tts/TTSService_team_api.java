@@ -102,6 +102,7 @@ public class TTSService_team_api {
                 successCount++;
                 LOGGER.info("TTSDetail 처리 완료: " + ttsRequestDetailDto);
 
+
             } catch (BusinessException e) {
                 LOGGER.severe("TTSDetail 처리 중 오류 발생: " + ttsRequestDetailDto + ", 메시지: " + e.getMessage());
                 // 실패한 디테일에 대한 실패 응답 추가

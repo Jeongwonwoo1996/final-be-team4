@@ -152,8 +152,34 @@ public class VCService_team_multi {
         return vcProject.getId();
     }
 
+    // 메서드 오버로딩 - 재홍
+    public Long saveVCProject(VCSaveRequestDto vcSaveDto, List<MultipartFile> localFiles, Member member) {
+
+        memberAudioMetaRepository.resetSelection(AudioType.VC_TRG);
+
+        // 1. VCProject 생성/업데이트
+        VCProject vcProject = vcSaveDto.getProjectId() == null
+                ? createNewVCProject(vcSaveDto, member)
+                : updateExistingVCProject(vcSaveDto); // member는 안넘겨도 될 것 같음
+
+        // 2. 타겟 파일 처리
+        processFiles(vcSaveDto.getTrgFiles(), localFiles, vcProject, AudioType.VC_TRG);
+
+        // 3. 소스 파일 처리
+        processFiles(vcSaveDto.getSrcFiles(), localFiles, vcProject, AudioType.VC_SRC);
+
+        return vcProject.getId();
+    }
+
     // VCProject 생성, 저장
     private VCProject createNewVCProject(VCSaveDto vcSaveDto, Member member) {
+
+        VCProject vcProject = VCProject.createVCProject(member, vcSaveDto.getProjectName());
+        vcProjectRepository.save(vcProject);
+        return vcProject;
+    }
+    // 메서드 오버로딩 - 재홍
+    private VCProject createNewVCProject(VCSaveRequestDto vcSaveDto, Member member) {
 
         VCProject vcProject = VCProject.createVCProject(member, vcSaveDto.getProjectName());
         vcProjectRepository.save(vcProject);
@@ -170,54 +196,66 @@ public class VCService_team_multi {
         return vcProject;
     }
 
-//    private void processFiles(List<? extends AudioFileDto> fileDtos, List<MultipartFile> files, VCProject vcProject, AudioType audioType) {
-//
-//        if (fileDtos == null || fileDtos.isEmpty()) { // 업로드 된 파일이 없을 때
-//            return;
-//        }
-//
-//        for (AudioFileDto fileDto : fileDtos) {
-//            MemberAudioMeta audioMeta = null;
-//
-//            // trg audio면 s3에서 목록 선택할 수 있음
-//            if (fileDto instanceof TrgAudioFileDto) {
-//                // S3 파일 처리
-//                Long s3Id = ((TrgAudioFileDto) fileDto).getS3MemberAudioMetaId();
-//                if (s3Id != null) {
-//                    audioMeta = memberAudioMetaRepository.findById(s3Id)
-//                            .orElseThrow(() -> new BusinessException(ErrorCode.NOT_EXISTS_AUDIO));
-//                }
-//            }
-//            // 로컬 파일 처리
-//            String localFileName = fileDto.getLocalFileName();
-//
-//            if (localFileName != null) {
-//                MultipartFile localFile = findMultipartFileByName(files, localFileName);
-//                String uploadUrl = s3Service.uploadAndSaveMemberFile(localFile,vcProject.getMember().getId(), vcProject.getId(), audioType);
-//
-//
-//                audioMeta = memberAudioMetaRepository.findFirstByAudioUrl(uploadUrl)
-//                        .orElseThrow(() -> new BusinessException(ErrorCode.NOT_EXISTS_AUDIO));
-//                memberAudioMetaRepository.selectAudio(audioMeta.getId(), AudioType.VC_TRG);
-//            }
-//
-//
-//            if (audioMeta == null) {
-//                throw new BusinessException(ErrorCode.INVALID_PROJECT_DATA);
-//            }
-//
-//            if (audioType == AudioType.VC_TRG) {
-//                // 타겟 파일은 VCProject에 저장
-//                vcProject.updateVCProject(vcProject.getProjectName(), audioMeta);
-//            } else {
-//                // 소스 파일은 VCDetail에 저장
-//                VCDetail vcDetail = VCDetail.createVCDetail(vcProject, audioMeta);
-//                SrcAudioFileDto srcFile = (SrcAudioFileDto) fileDto;
-//                vcDetail.updateDetails(srcFile.getIsChecked(), srcFile.getUnitScript());
-//                vcDetailRepository.save(vcDetail);
-//            }
-//        }
-//    }
+
+    //메서드 오버로딩 - 재홍
+    private VCProject updateExistingVCProject(VCSaveRequestDto vcSaveDto) {
+        VCProject vcProject = vcProjectRepository.findById(vcSaveDto.getProjectId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_EXISTS_PROJECT));
+
+        vcProject.updateVCProject(vcSaveDto.getProjectName(), null);
+
+        return vcProject;
+    }
+
+
+    private void processFiles(List<? extends AudioFileDto> fileDtos, List<MultipartFile> files, VCProject vcProject, AudioType audioType) {
+
+        if (fileDtos == null || fileDtos.isEmpty()) { // 업로드 된 파일이 없을 때
+            return;
+        }
+
+        for (AudioFileDto fileDto : fileDtos) {
+            MemberAudioMeta audioMeta = null;
+
+            // trg audio면 s3에서 목록 선택할 수 있음
+            if (fileDto instanceof TrgAudioFileRequestDto) {
+                // S3 파일 처리
+                Long s3Id = ((TrgAudioFileRequestDto) fileDto).getS3MemberAudioMetaId();
+                if (s3Id != null) {
+                    audioMeta = memberAudioMetaRepository.findById(s3Id)
+                            .orElseThrow(() -> new BusinessException(ErrorCode.NOT_EXISTS_AUDIO));
+                }
+            }
+            // 로컬 파일 처리
+            String localFileName = fileDto.getLocalFileName();
+
+            if (localFileName != null) {
+                MultipartFile localFile = findMultipartFileByName(files, localFileName);
+                String uploadUrl = s3Service.uploadAndSaveMemberFile(localFile,vcProject.getMember().getId(), vcProject.getId(), audioType);
+
+
+                audioMeta = memberAudioMetaRepository.findFirstByAudioUrl(uploadUrl)
+                        .orElseThrow(() -> new BusinessException(ErrorCode.NOT_EXISTS_AUDIO));
+                memberAudioMetaRepository.selectAudio(audioMeta.getId(), AudioType.VC_TRG);
+            }
+
+
+            if (audioMeta == null) {
+                throw new BusinessException(ErrorCode.INVALID_PROJECT_DATA);
+            }
+
+            if (audioType == AudioType.VC_TRG) {
+                // 타겟 파일은 VCProject에 저장
+                vcProject.updateVCProject(vcProject.getProjectName(), audioMeta);
+            } else {
+                // 소스 파일은 VCDetail에 저장
+                VCDetail vcDetail = VCDetail.createVCDetail(vcProject, audioMeta);
+                SrcAudioFileRequestDto srcFile = (SrcAudioFileRequestDto) fileDto;
+                vcDetail.updateDetails(srcFile.getIsChecked(), srcFile.getUnitScript());
+                vcDetailRepository.save(vcDetail);
+            }
+        }
+    }
 
     private void processSrcFiles(List<SrcAudioFileDto> fileDtos, List<MultipartFile> files, VCProject vcProject) {
         // detail id가 존재하면 for문에서 다음으로 넘어가기

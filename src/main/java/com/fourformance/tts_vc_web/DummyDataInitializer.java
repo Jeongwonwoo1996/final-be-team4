@@ -1,8 +1,10 @@
 package com.fourformance.tts_vc_web;
 
 import com.fourformance.tts_vc_web.common.constant.APIStatusConst;
+import com.fourformance.tts_vc_web.common.constant.APIUnitStatusConst;
 import com.fourformance.tts_vc_web.common.constant.AudioType;
 import com.fourformance.tts_vc_web.common.constant.ProjectType;
+import com.fourformance.tts_vc_web.domain.entity.APIStatus;
 import com.fourformance.tts_vc_web.domain.entity.ConcatDetail;
 import com.fourformance.tts_vc_web.domain.entity.ConcatProject;
 import com.fourformance.tts_vc_web.domain.entity.Member;
@@ -13,6 +15,7 @@ import com.fourformance.tts_vc_web.domain.entity.TTSProject;
 import com.fourformance.tts_vc_web.domain.entity.VCDetail;
 import com.fourformance.tts_vc_web.domain.entity.VCProject;
 import com.fourformance.tts_vc_web.domain.entity.VoiceStyle;
+import com.fourformance.tts_vc_web.repository.APIStatusRepository;
 import com.fourformance.tts_vc_web.repository.ConcatDetailRepository;
 import com.fourformance.tts_vc_web.repository.ConcatProjectRepository;
 import com.fourformance.tts_vc_web.repository.MemberAudioMetaRepository;
@@ -46,6 +49,7 @@ public class DummyDataInitializer {
     private final VoiceStyleRepository voiceStyleRepository;
     private final OutputAudioMetaRepository outputAudioMetaRepository;
     private final MemberAudioMetaRepository memberAudioMetaRepository;
+    private final APIStatusRepository apiStatusRepository;
 
     @Bean
     public ApplicationRunner initializeDummyData() {
@@ -62,11 +66,11 @@ public class DummyDataInitializer {
         // 멤버 생성
         List<Member> members = List.of(
                 Member.createMember("user1@example.com", "password123", "User One", 0,
-                        LocalDateTime.of(1990, 1, 1, 0, 0), "123-456-7890"),
+                        LocalDateTime.of(1990, 1, 1, 0, 0), "123-456-7890",true),
                 Member.createMember("user2@example.com", "password456", "User Two", 1,
-                        LocalDateTime.of(1995, 5, 15, 0, 0), "234-567-8901"),
+                        LocalDateTime.of(1995, 5, 15, 0, 0), "234-567-8901",true),
                 Member.createMember("user3@example.com", "password789", "User Three", 0,
-                        LocalDateTime.of(1985, 3, 20, 0, 0), "345-678-9012")
+                        LocalDateTime.of(1985, 3, 20, 0, 0), "345-678-9012",true)
         );
         memberRepository.saveAll(members);
 
@@ -121,6 +125,22 @@ public class DummyDataInitializer {
                         "https://audio.example.com/tts_project_" + i + "_detail_" + j + ".wav"
                 );
                 outputAudioMetaRepository.save(outputAudioMeta);
+
+                // APIStatus 생성
+                for (int k = 1; k <= 3; k++) { // 각 TTSDetail에 3개의 APIStatus 생성
+                    APIStatus apiStatus = APIStatus.createAPIStatus(
+                            null,
+                            ttsDetail,
+                            "Request payload for TTSDetail " + j + " API status " + k
+                    );
+                    apiStatus.updateResponseInfo(
+                            "Response payload for TTSDetail " + j + " API status " + k,
+                            200 + k, // 다양한 응답 코드
+                            APIUnitStatusConst.values()[k % APIUnitStatusConst.values().length]
+                    );
+                    ttsDetail.addApiStatus(apiStatus);
+                    apiStatusRepository.save(apiStatus);
+                }
             }
         }
 
@@ -159,6 +179,22 @@ public class DummyDataInitializer {
                         "https://audio.example.com/vc_project_" + i + "_detail_" + j + ".wav"
                 );
                 outputAudioMetaRepository.save(outputAudioMeta);
+
+                // APIStatus 생성
+                for (int k = 1; k <= 3; k++) { // 각 TTSDetail에 3개의 APIStatus 생성
+                    APIStatus apiStatus = APIStatus.createAPIStatus(
+                            vcDetail,
+                            null,
+                            "Request payload for TTSDetail " + j + " API status " + k
+                    );
+                    apiStatus.updateResponseInfo(
+                            "Response payload for TTSDetail " + j + " API status " + k,
+                            200 + k, // 다양한 응답 코드
+                            APIUnitStatusConst.values()[k % APIUnitStatusConst.values().length]
+                    );
+                    vcDetail.addApiStatus(apiStatus);
+                    apiStatusRepository.save(apiStatus);
+                }
             }
         }
 
