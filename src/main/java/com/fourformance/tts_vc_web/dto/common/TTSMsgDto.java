@@ -2,6 +2,7 @@ package com.fourformance.tts_vc_web.dto.common;
 
 import com.fourformance.tts_vc_web.common.constant.AudioType;
 import com.fourformance.tts_vc_web.common.constant.ProjectType;
+import com.fourformance.tts_vc_web.domain.entity.TTSDetail;
 import com.fourformance.tts_vc_web.dto.tts.TTSRequestDetailDto;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -22,5 +23,6 @@ public class TTSMsgDto {
     private Float unitPitch;        // 단위 피치
     private Float unitVolume;       // 단위 볼륨
     private Long unitVoiceStyleId;  // 스타일 ID
-
+    private TTSRequestDetailDto ttsDetail;
+    private LocalDateTime timestamp;
 }

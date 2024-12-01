@@ -25,6 +25,7 @@ public class BackupTask extends BaseEntity {
     @JoinColumn(name = "task_id")
     private Task task;
 
+    @Column(columnDefinition = "JSON")
     private String backupData;
     private BackupType backupType;
     private LocalDateTime created_at;
