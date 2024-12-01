@@ -55,17 +55,17 @@ public class TaskConsumer {
             TTSMsgDto ttsMsgDto = objectMapper.readValue(message, TTSMsgDto.class);
 
             // 상태 업데이트
-            Task task = taskRepository.findByNameInJson(ttsMsgDto.getTtsDetail().getId());
-            TaskHistory latestHistory = historyRepository.findLatestTaskHistoryByTaskId(task.getId());
-            TaskHistory taskHistory   = TaskHistory.createTaskHistory(task, latestHistory.getNewStatus(), TaskStatusConst.RUNNABLE, "작업 시작");
+//            Task task = taskRepository.findByNameInJson(ttsMsgDto.getTtsDetail().getId());
+//            TaskHistory latestHistory = historyRepository.findLatestTaskHistoryByTaskId(task.getId());
+//            TaskHistory taskHistory   = TaskHistory.createTaskHistory(task, latestHistory.getNewStatus(), TaskStatusConst.RUNNABLE, "작업 시작");
             //TaskHistoryRepository.save(taskHistory)
 
 
             // TTS 작업
             // ttsService.processTtsDetail 매개변수 수정하기 (TTSRequestDto -> ttsMsgDto로 변경)
             // 반환값 처리하기
-            TTSProject ttsProject = ttsProjectRepository.findById(ttsMsgDto.getProjectId())
-                    .orElseThrow(() -> { throw new BusinessException(ErrorCode.PROJECT_NOT_FOUND); });
+                            TTSProject ttsProject = ttsProjectRepository.findById(ttsMsgDto.getProjectId())
+                                    .orElseThrow(() -> { throw new BusinessException(ErrorCode.PROJECT_NOT_FOUND); });
             Map<String, String> fileUrlMap = ttsService.processTtsDetail(ttsMsgDto, ttsProject);
             String fileUrl = fileUrlMap.get("fileUrl");
 
@@ -87,9 +87,9 @@ public class TaskConsumer {
             // 메시지 처리 완료 시 1. RabbitMQ에 ACK 전송, 2. SSE로 전달, 3. 상태값 변환(완료)
             channel.basicAck(tag, false);
 
-            Task newTask = taskRepository.findByNameInJson(ttsMsgDto.getTtsDetail().getId());
-            TaskHistory latestHistory2 = historyRepository.findLatestTaskHistoryByTaskId(newTask.getId());
-            TaskHistory newTaskHistory   = TaskHistory.createTaskHistory(task, latestHistory2.getNewStatus(), TaskStatusConst.RUNNABLE, "작업 시작");
+//            Task newTask = taskRepository.findByNameInJson(ttsMsgDto.getTtsDetail().getId());
+//            TaskHistory latestHistory2 = historyRepository.findLatestTaskHistoryByTaskId(newTask.getId());
+//            TaskHistory newTaskHistory   = TaskHistory.createTaskHistory(task, latestHistory2.getNewStatus(), TaskStatusConst.RUNNABLE, "작업 시작");
 
             return responseDetail;
 
@@ -130,9 +130,9 @@ public class TaskConsumer {
             VCMsgDto vcMsgDto = objectMapper.readValue(message, VCMsgDto.class);
 
             // 상태 업데이트
-            Task task = taskRepository.findByNameInJson(vcMsgDto.getDetailId());
-            TaskHistory latestHistory = historyRepository.findLatestTaskHistoryByTaskId(task.getId());
-            TaskHistory taskHistory   = TaskHistory.createTaskHistory(task, latestHistory.getNewStatus(), TaskStatusConst.RUNNABLE, "작업 시작");
+//            Task task = taskRepository.findByNameInJson(vcMsgDto.getDetailId());
+//            TaskHistory latestHistory = historyRepository.findLatestTaskHistoryByTaskId(task.getId());
+//            TaskHistory taskHistory   = TaskHistory.createTaskHistory(task, latestHistory.getNewStatus(), TaskStatusConst.RUNNABLE, "작업 시작");
 
 
 
