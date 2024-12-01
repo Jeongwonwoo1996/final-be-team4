@@ -46,7 +46,7 @@ public class TaskConsumer {
      *
      */
     @RabbitListener(queues = TaskConfig.TTS_QUEUE, ackMode = "MANUAL")
-    public void handleTTSTask(String message, Channel channel, @Header(AmqpHeaders.DELIVERY_TAG) long tag) {
+    public TTSResponseDetailDto handleTTSTask(String message, Channel channel, @Header(AmqpHeaders.DELIVERY_TAG) long tag) {
 
         System.out.println("TTS audio task : " + message);
 
@@ -58,6 +58,7 @@ public class TaskConsumer {
             Task task = taskRepository.findByNameInJson(ttsMsgDto.getTtsDetail().getId());
             TaskHistory latestHistory = historyRepository.findLatestTaskHistoryByTaskId(task.getId());
             TaskHistory taskHistory   = TaskHistory.createTaskHistory(task, latestHistory.getNewStatus(), TaskStatusConst.RUNNABLE, "작업 시작");
+            //TaskHistoryRepository.save(taskHistory)
 
 
             // TTS 작업
@@ -90,11 +91,11 @@ public class TaskConsumer {
             TaskHistory latestHistory2 = historyRepository.findLatestTaskHistoryByTaskId(newTask.getId());
             TaskHistory newTaskHistory   = TaskHistory.createTaskHistory(task, latestHistory2.getNewStatus(), TaskStatusConst.RUNNABLE, "작업 시작");
 
-
+            return responseDetail;
 
 
             // 예외를 강제로 발생
-            throw new RuntimeException("Processing failed for TTS task");
+            // throw new RuntimeException("Processing failed for TTS task");
 
 
         } catch (JsonProcessingException e) { // 상태값 변환(실패)
@@ -111,6 +112,7 @@ public class TaskConsumer {
                 System.err.println("Error while rejecting the message: " + ioException.getMessage());
             }
         }
+        return null;
     }
 
     /**
@@ -126,6 +128,14 @@ public class TaskConsumer {
         try{
             // meassage(String) -> TTSMsgDto 로 역직렬화
             VCMsgDto vcMsgDto = objectMapper.readValue(message, VCMsgDto.class);
+
+            // 상태 업데이트
+            Task task = taskRepository.findByNameInJson(vcMsgDto.getDetailId());
+            TaskHistory latestHistory = historyRepository.findLatestTaskHistoryByTaskId(task.getId());
+            TaskHistory taskHistory   = TaskHistory.createTaskHistory(task, latestHistory.getNewStatus(), TaskStatusConst.RUNNABLE, "작업 시작");
+
+
+
 
         }catch(Exception e){
             // 실패 상태로 업데이트
