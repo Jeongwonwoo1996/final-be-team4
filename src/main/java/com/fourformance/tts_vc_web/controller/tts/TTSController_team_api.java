@@ -78,6 +78,9 @@ public class TTSController_team_api {
 
         if(queue){
             // 비동기 처리: RabbitMQ로 메시지 전송
+
+            // 1. 프로젝트&디테일 저장
+            // 2. 저장된 값으로 음성변환 실행(해당 서비스에서 큐 작업 처리)
             Project findProject = projectRepository.findById(ttsRequestDto.getProjectId())
                     .orElseThrow(() -> new BusinessException(ErrorCode.NOT_EXISTS_PROJECT));
 
@@ -100,7 +103,7 @@ public class TTSController_team_api {
             }
 
             return DataResponseDto.of("TTS 작업이 큐에 추가되었습니다.");
-        }else{ // 동기 처리
+        }else{ // 동기 처리, 나중에 삭제 할 코드
             // 유효성 검증: 요청 데이터가 null이거나 텍스트 세부사항 리스트가 비어있는 경우 예외 처리
             if (ttsRequestDto == null || ttsRequestDto.getTtsDetails() == null || ttsRequestDto.getTtsDetails().isEmpty()) {
                 throw new BusinessException(ErrorCode.INVALID_REQUEST_DATA); // 커스텀 예외 발생
