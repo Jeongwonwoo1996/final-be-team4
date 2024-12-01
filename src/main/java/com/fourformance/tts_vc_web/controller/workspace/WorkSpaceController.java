@@ -2,13 +2,15 @@ package com.fourformance.tts_vc_web.controller.workspace;
 
 import com.fourformance.tts_vc_web.dto.response.DataResponseDto;
 import com.fourformance.tts_vc_web.dto.response.ResponseDto;
-import com.fourformance.tts_vc_web.dto.workspace.ExportListDto2;
+import com.fourformance.tts_vc_web.dto.workspace.ExportWithDownloadLinkDto;
 import com.fourformance.tts_vc_web.dto.workspace.ProjectListDto;
 import com.fourformance.tts_vc_web.dto.workspace.RecentExportDto;
 import com.fourformance.tts_vc_web.dto.workspace.RecentProjectDto;
 import com.fourformance.tts_vc_web.repository.OutputAudioMetaRepository;
 import com.fourformance.tts_vc_web.repository.ProjectRepository;
+import com.fourformance.tts_vc_web.repository.workspace.OutputAudioMetaRepositoryCustomImpl;
 import com.fourformance.tts_vc_web.service.common.ProjectService_team_aws;
+import com.fourformance.tts_vc_web.service.common.S3Service;
 import com.fourformance.tts_vc_web.service.workspace.WorkspaceService;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.servlet.http.HttpSession;
@@ -18,7 +20,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -32,6 +36,8 @@ public class WorkSpaceController {
     private final ProjectService_team_aws projectService;
     private final ProjectRepository projectRepository;
     private final OutputAudioMetaRepository outputAudioMetaRepository;
+    private final OutputAudioMetaRepositoryCustomImpl outputAudioMetaRepositoryCustomImpl;
+    private final S3Service s3Service;
 
     // 최근 5개의 프로젝트를 조회하는 api
     @Operation(summary = "최근 프로젝트 5개 조회", description = "해당 유저의 최근 프로젝트 5개를 조회합니다. <br>"
@@ -77,15 +83,53 @@ public class WorkSpaceController {
         return DataResponseDto.of(projects);
     }
 
-    @GetMapping("/api/v1/exports")
+    @GetMapping("/api/v1/exports-test")
     public ResponseDto getExports(
             @RequestParam(name = "keyword", required = false) String keyword,
             HttpSession session
     ) {
-        //        Long memberId = (Long) session.getAttribute("memberId");
-        Long memberId = 1L; // 개발단계 임시 하드코딩
+        // 임시로 memberId를 하드코딩 (개발 단계)
+        // 실제 배포에서는 세션에서 memberId를 가져와야 합니다.
+        Long memberId = 1L; // (Long) session.getAttribute("memberId");
 
-        List<ExportListDto2> exports = outputAudioMetaRepository.findExportHistoryBySearchCriteria2(memberId, keyword);
+        // WorkspaceService의 메서드 호출
+        List<ExportWithDownloadLinkDto> exports = workspaceService.getRecentExportsWithDownloadLink(memberId, keyword);
+
+        // 결과를 ResponseDto로 래핑하여 반환
         return DataResponseDto.of(exports);
+    }
+
+    @GetMapping("/exports")
+    public ResponseDto getExports2(
+            @RequestParam(name = "keyword", required = false) String keyword,
+            @PageableDefault(size = 10) Pageable pageable,
+            HttpSession session
+
+    ) {
+        Long memberId = 1L;
+
+        Page<ExportWithDownloadLinkDto> exports = outputAudioMetaRepository.findExportHistoryBySearchCriteria(memberId,
+                keyword, pageable);
+        return DataResponseDto.of(exports);
+    }
+
+    @DeleteMapping("/delete/project")
+    public ResponseDto deleteProjects(@RequestBody List<Long> projectIds) {
+        // 서비스 호출 및 삭제 로직 수행
+        for (Long projectId : projectIds) {
+            s3Service.deleteAudioPerProject(projectId); // 연관된 모든 객체 isDeleted 처리와 버킷 오디오 삭제까지 다 함.
+        }
+
+        // 상태 코드 반환
+        return DataResponseDto.of("삭제가 완료되었습니다.");
+    }
+
+    @DeleteMapping("/delete/export")
+    public ResponseDto deleteExports(@RequestBody List<Long> audioId) {
+        for (Long exportId : audioId) {
+            s3Service.deleteAudioOutput(exportId);
+        }
+
+        return DataResponseDto.of("삭제가 완료되었습니다.");
     }
 }
