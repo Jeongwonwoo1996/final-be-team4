@@ -65,34 +65,29 @@ public class TaskConsumer {
             String fileUrl = fileUrlMap.get("fileUrl");
 
             // TTSResponseDetailDto 생성 및 추가
-//            TTSMsgDto responseDetail = TTSMsgDto.builder()
-//                    .id(ttsDetail.getId())
-//                    .projectId(ttsProject.getId())
-//                    .unitScript(ttsDetail.getUnitScript())
-//                    .unitSpeed(ttsDetail.getUnitSpeed())
-//                    .unitPitch(ttsDetail.getUnitPitch())
-//                    .unitVolume(ttsDetail.getUnitVolume())
-//                    .isDeleted(ttsDetail.getIsDeleted())
-//                    .unitSequence(ttsDetail.getUnitSequence())
-//                    .UnitVoiceStyleId(ttsDetail.getVoiceStyle().getId())
-//                    .fileUrl(fileUrl) // 처리된 URL 삽입
-//                    .apiUnitStatus(APIUnitStatusConst.SUCCESS)
-//                    .build();
-//
-//            responseDetails.add(responseDetail);
-//            successCount++;
-//            LOGGER.info("TTSDetail 처리 완료: " + ttsRequestDetailDto);
-//
-//
-//            // 변환 결과가 비어있으면 실패로 간주
-//            if (ttsResponseDto.getTtsDetails().isEmpty()) {
-//                throw new BusinessException(ErrorCode.TTS_CREATE_FAILED);
-//            }
+            TTSResponseDetailDto responseDetail = TTSResponseDetailDto.builder()
+                    .id(ttsMsgDto.getDetailId())
+                    .projectId(ttsMsgDto.getProjectId())
+                    .unitScript(ttsMsgDto.getUnitScript())
+                    .unitSpeed(ttsMsgDto.getUnitSpeed())
+                    .unitPitch(ttsMsgDto.getUnitPitch())
+                    .unitVolume(ttsMsgDto.getUnitVolume())
+                    .UnitVoiceStyleId(ttsMsgDto.getUnitVoiceStyleId())
+                    .fileUrl(fileUrl) // 처리된 URL 삽입
+                    .apiUnitStatus(APIUnitStatusConst.SUCCESS)
+                    .build();
 
 
 
-            // 메시지 처리 완료 시 RabbitMQ에 ACK 전송, SSE로 전달, 상태값 변환(완료)
+            // 메시지 처리 완료 시 1. RabbitMQ에 ACK 전송, 2. SSE로 전달, 3. 상태값 변환(완료)
             channel.basicAck(tag, false);
+
+            Task newTask = taskRepository.findByNameInJson(ttsMsgDto.getTtsDetail().getId());
+            TaskHistory latestHistory2 = historyRepository.findLatestTaskHistoryByTaskId(newTask.getId());
+            TaskHistory newTaskHistory   = TaskHistory.createTaskHistory(task, latestHistory2.getNewStatus(), TaskStatusConst.RUNNABLE, "작업 시작");
+
+
+
 
             // 예외를 강제로 발생
             throw new RuntimeException("Processing failed for TTS task");

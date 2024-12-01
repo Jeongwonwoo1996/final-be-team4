@@ -89,24 +89,24 @@ public class TTSService_TaskJob {
                 TTSMsgDto ttsMsgDto ;
 
 
-                Map<String, String> fileUrlMap = processTtsDetail(ttsMsgDto, ttsProject);
-                String fileUrl = fileUrlMap.get("fileUrl");
-
-                // TTSResponseDetailDto 생성 및 추가
-                TTSResponseDetailDto responseDetail = TTSResponseDetailDto.builder()
-                        .id(ttsMsgDto.getDetailId())
-                        .projectId(ttsMsgDto.getProjectId())
-                        .unitScript(ttsMsgDto.getUnitScript())
-                        .unitSpeed(ttsMsgDto.getUnitSpeed())
-                        .unitPitch(ttsMsgDto.getUnitPitch())
-                        .unitVolume(ttsMsgDto.getUnitVolume())
-                        .UnitVoiceStyleId(ttsMsgDto.getUnitVoiceStyleId())
-                        .fileUrl(fileUrl) // 처리된 URL 삽입
-                        .apiUnitStatus(APIUnitStatusConst.SUCCESS)
-                        .build();
-
-                responseDetails.add(responseDetail);
-                successCount++;
+//                Map<String, String> fileUrlMap = processTtsDetail(ttsMsgDto, ttsProject);
+//                String fileUrl = fileUrlMap.get("fileUrl");
+//
+//                // TTSResponseDetailDto 생성 및 추가
+//                TTSResponseDetailDto responseDetail = TTSResponseDetailDto.builder()
+//                        .id(ttsMsgDto.getDetailId())
+//                        .projectId(ttsMsgDto.getProjectId())
+//                        .unitScript(ttsMsgDto.getUnitScript())
+//                        .unitSpeed(ttsMsgDto.getUnitSpeed())
+//                        .unitPitch(ttsMsgDto.getUnitPitch())
+//                        .unitVolume(ttsMsgDto.getUnitVolume())
+//                        .UnitVoiceStyleId(ttsMsgDto.getUnitVoiceStyleId())
+//                        .fileUrl(fileUrl) // 처리된 URL 삽입
+//                        .apiUnitStatus(APIUnitStatusConst.SUCCESS)
+//                        .build();
+//
+//                responseDetails.add(responseDetail);
+//                successCount++;
                 LOGGER.info("TTSDetail 처리 완료: " + ttsRequestDetailDto);
 
 
