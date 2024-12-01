@@ -53,7 +53,7 @@ public class QMember extends EntityPathBase<Member> {
 
     public final StringPath pwd = createString("pwd");
 
-    public final StringPath tou = createString("tou");
+    public final BooleanPath tou = createBoolean("tou");
 
     public final DateTimePath<java.time.LocalDateTime> updatedAt = createDateTime("updatedAt", java.time.LocalDateTime.class);
 
