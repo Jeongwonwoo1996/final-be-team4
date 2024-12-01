@@ -114,7 +114,9 @@ public class TTSController_team_api {
 
 
             // TTS 변환 처리
-            TTSResponseDto ttsResponseDto = ttsService.convertAllTtsDetails(ttsRequestDto, memberId);
+             System.out.println("=========ttsRequestDto.toString() = " + ttsRequestDto.toString());
+            TTSResponseDto ttsResponseDto = ttsService.convertAllTtsDetails(ttsRequestDto, 1L);
+
 
             // 변환 결과가 비어있으면 실패로 간주
             if (ttsResponseDto.getTtsDetails().isEmpty()) {
