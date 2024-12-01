@@ -12,6 +12,7 @@ import com.fourformance.tts_vc_web.domain.entity.TTSProject;
 import com.fourformance.tts_vc_web.domain.entity.Task;
 import com.fourformance.tts_vc_web.domain.entity.TaskHistory;
 import com.fourformance.tts_vc_web.dto.common.TTSMsgDto;
+import com.fourformance.tts_vc_web.dto.common.VCMsgDto;
 import com.fourformance.tts_vc_web.dto.tts.TTSResponseDetailDto;
 import com.fourformance.tts_vc_web.dto.tts.TTSResponseDto;
 import com.fourformance.tts_vc_web.repository.TTSProjectRepository;
@@ -40,6 +41,10 @@ public class TaskConsumer {
     private final TTSService_TaskJob ttsService;
     private final TTSProjectRepository ttsProjectRepository;
 
+    /**
+     * TTS 작업 처리: 큐에서 작업을 꺼내 TTS 작업 처리
+     *
+     */
     @RabbitListener(queues = TaskConfig.TTS_QUEUE, ackMode = "MANUAL")
     public void handleTTSTask(String message, Channel channel, @Header(AmqpHeaders.DELIVERY_TAG) long tag) {
 
@@ -58,7 +63,6 @@ public class TaskConsumer {
             // TTS 작업
             // ttsService.processTtsDetail 매개변수 수정하기 (TTSRequestDto -> ttsMsgDto로 변경)
             // 반환값 처리하기
-
             TTSProject ttsProject = ttsProjectRepository.findById(ttsMsgDto.getProjectId())
                     .orElseThrow(() -> { throw new BusinessException(ErrorCode.PROJECT_NOT_FOUND); });
             Map<String, String> fileUrlMap = ttsService.processTtsDetail(ttsMsgDto, ttsProject);
@@ -97,6 +101,7 @@ public class TaskConsumer {
             // JSON 파싱 에러 처리
             System.err.println("Failed to parse message: " + e.getMessage());
 
+
         } catch (Exception e) { // 상태값 변환(실패)
             System.err.println("Message processing failed: " + e.getMessage());
             try {
@@ -108,11 +113,19 @@ public class TaskConsumer {
         }
     }
 
+    /**
+     * VC 작업 처리: 큐에서 작업을 꺼내 VC 작업 처리
+     *
+     */
     @RabbitListener(queues = TaskConfig.VC_QUEUE)
-    public void handleVCTask(String message) {
+    public void handleVCTask(String message, Channel channel, @Header(AmqpHeaders.DELIVERY_TAG) long tag) {
+
         System.out.println("VC audio task : " + message);
+
         // 처리 로직 구현
         try{
+            // meassage(String) -> TTSMsgDto 로 역직렬화
+            VCMsgDto vcMsgDto = objectMapper.readValue(message, VCMsgDto.class);
 
         }catch(Exception e){
             // 실패 상태로 업데이트
@@ -120,6 +133,10 @@ public class TaskConsumer {
         }
     }
 
+    /**
+     * Concat 작업 처리: 큐에서 작업을 꺼내 Concat 작업 처리
+     *
+     */
     @RabbitListener(queues = TaskConfig.CONCAT_QUEUE)
     public void handleConcatTask(String message) {
         System.out.println("Concat audio task : " + message);
