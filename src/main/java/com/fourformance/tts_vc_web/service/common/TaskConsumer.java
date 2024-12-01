@@ -8,6 +8,7 @@ import com.fourformance.tts_vc_web.common.constant.APIUnitStatusConst;
 import com.fourformance.tts_vc_web.common.constant.TaskStatusConst;
 import com.fourformance.tts_vc_web.common.exception.common.BusinessException;
 import com.fourformance.tts_vc_web.common.exception.common.ErrorCode;
+import com.fourformance.tts_vc_web.controller.common.SSEController;
 import com.fourformance.tts_vc_web.domain.entity.TTSProject;
 import com.fourformance.tts_vc_web.domain.entity.Task;
 import com.fourformance.tts_vc_web.domain.entity.TaskHistory;
@@ -29,7 +30,9 @@ import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 @Component
 @RequiredArgsConstructor
@@ -40,32 +43,44 @@ public class TaskConsumer {
     private final TaskHistoryRepository historyRepository;
     private final TTSService_TaskJob ttsService;
     private final TTSProjectRepository ttsProjectRepository;
+    private final SSEController sseController;
 
     /**
      * TTS 작업 처리: 큐에서 작업을 꺼내 TTS 작업 처리
      *
      */
     @RabbitListener(queues = TaskConfig.TTS_QUEUE, ackMode = "MANUAL")
-    public TTSResponseDetailDto handleTTSTask(String message, Channel channel, @Header(AmqpHeaders.DELIVERY_TAG) long tag) {
+    public void handleTTSTask(String message, Channel channel, @Header(AmqpHeaders.DELIVERY_TAG) long tag) {
 
         System.out.println("TTS audio task : " + message);
 
         try {
             // meassage(String) -> TTSMsgDto 로 역직렬화
             TTSMsgDto ttsMsgDto = objectMapper.readValue(message, TTSMsgDto.class);
+            System.out.println("ttsMsgDto.getTaskId() = " + ttsMsgDto.getTaskId());
 
             // 상태 업데이트
-//            Task task = taskRepository.findByNameInJson(ttsMsgDto.getTtsDetail().getId());
-//            TaskHistory latestHistory = historyRepository.findLatestTaskHistoryByTaskId(task.getId());
-//            TaskHistory taskHistory   = TaskHistory.createTaskHistory(task, latestHistory.getNewStatus(), TaskStatusConst.RUNNABLE, "작업 시작");
-            //TaskHistoryRepository.save(taskHistory)
+//            Task task = taskRepository.findByNameInJson(ttsMsgDto.getDetailId());
+            Task task = taskRepository.findById(ttsMsgDto.getTaskId())
+                    .orElseThrow(() -> new BusinessException(ErrorCode.TASK_NOT_FOUND));
+            System.out.println("task.getId: "+ task.getId());
+            TaskHistory latestHistory = historyRepository.findLatestTaskHistoryByTaskId(task.getId());
+            if (latestHistory == null) {
+                // 기본 TaskHistory를 생성
+                latestHistory = TaskHistory.createTaskHistory(task, TaskStatusConst.RUNNABLE, TaskStatusConst.RUNNABLE, "작업 시작");
+            }
+
+            System.out.println("task history찾기");
+
+            historyRepository.save(latestHistory);
 
 
             // TTS 작업
             // ttsService.processTtsDetail 매개변수 수정하기 (TTSRequestDto -> ttsMsgDto로 변경)
             // 반환값 처리하기
-                            TTSProject ttsProject = ttsProjectRepository.findById(ttsMsgDto.getProjectId())
-                                    .orElseThrow(() -> { throw new BusinessException(ErrorCode.PROJECT_NOT_FOUND); });
+            TTSProject ttsProject = ttsProjectRepository.findById(ttsMsgDto.getProjectId())
+                    .orElseThrow(() -> new BusinessException(ErrorCode.PROJECT_NOT_FOUND));
+
             Map<String, String> fileUrlMap = ttsService.processTtsDetail(ttsMsgDto, ttsProject);
             String fileUrl = fileUrlMap.get("fileUrl");
 
@@ -82,27 +97,27 @@ public class TaskConsumer {
                     .apiUnitStatus(APIUnitStatusConst.SUCCESS)
                     .build();
 
-
+            // SSE로 상태 전송
+            sseController.sendStatusUpdate(ttsMsgDto.getProjectId(), responseDetail);
 
             // 메시지 처리 완료 시 1. RabbitMQ에 ACK 전송, 2. SSE로 전달, 3. 상태값 변환(완료)
+            // 메시지 ACK 전송
             channel.basicAck(tag, false);
 
+            System.out.println("TTS audio task completed successfully: " + message);
+
 //            Task newTask = taskRepository.findByNameInJson(ttsMsgDto.getTtsDetail().getId());
+//            Task newTask = taskRepository.findById(ttsMsgDto.getTaskId())
+//                    .orElseThrow(() -> new BusinessException(ErrorCode.TASK_NOT_FOUND));
+//
 //            TaskHistory latestHistory2 = historyRepository.findLatestTaskHistoryByTaskId(newTask.getId());
-//            TaskHistory newTaskHistory   = TaskHistory.createTaskHistory(task, latestHistory2.getNewStatus(), TaskStatusConst.RUNNABLE, "작업 시작");
-
-            return responseDetail;
-
-
-            // 예외를 강제로 발생
-            // throw new RuntimeException("Processing failed for TTS task");
+//            TaskHistory newTaskHistory   = TaskHistory.createTaskHistory(newTask, latestHistory2.getNewStatus(), TaskStatusConst.COMPLETED, "작업완료");
+//            historyRepository.save(newTaskHistory);
 
 
         } catch (JsonProcessingException e) { // 상태값 변환(실패)
             // JSON 파싱 에러 처리
             System.err.println("Failed to parse message: " + e.getMessage());
-
-
         } catch (Exception e) { // 상태값 변환(실패)
             System.err.println("Message processing failed: " + e.getMessage());
             try {
@@ -112,8 +127,8 @@ public class TaskConsumer {
                 System.err.println("Error while rejecting the message: " + ioException.getMessage());
             }
         }
-        return null;
     }
+
 
     /**
      * VC 작업 처리: 큐에서 작업을 꺼내 VC 작업 처리
