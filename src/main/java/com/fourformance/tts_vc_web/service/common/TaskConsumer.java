@@ -48,6 +48,7 @@ public class TaskConsumer {
     private final TTSProjectRepository ttsProjectRepository;
     private final SSEController sseController;
 
+
     /**
      * TTS 작업 처리: 큐에서 작업을 꺼내 TTS 작업 처리
      *
@@ -55,20 +56,23 @@ public class TaskConsumer {
     @RabbitListener(queues = TaskConfig.TTS_QUEUE, ackMode = "MANUAL")
     public void handleTTSTask(String message, Channel channel, @Header(AmqpHeaders.DELIVERY_TAG) long tag) {
 
-        System.out.println("TTS audio task : " + message);
+        Long projectId = -1L;
+        Long detailId = -1L;
 
+        System.out.println("TTS audio task : " + message);
         try {
             // meassage(String) -> TTSMsgDto 로 역직렬화
             TTSMsgDto ttsMsgDto = objectMapper.readValue(message, TTSMsgDto.class);
-            System.out.println("ttsMsgDto.getTaskId() = " + ttsMsgDto.getTaskId());
+            projectId = ttsMsgDto.getProjectId();
+            detailId  = ttsMsgDto.getDetailId();
+
 
             // 상태 업데이트
-            updateStatus(ttsMsgDto.getDetailId(), TaskStatusConst.RUNNABLE, "작업 시작");
+            updateStatus(detailId, TaskStatusConst.RUNNABLE, "작업 시작");
+            sseController.sendStatusUpdate(ttsMsgDto.getProjectId(), null);
 
             // TTS 작업
-            // ttsService.processTtsDetail 매개변수 수정하기 (TTSRequestDto -> ttsMsgDto로 변경)
-            // 반환값 처리하기
-            TTSProject ttsProject = ttsProjectRepository.findById(ttsMsgDto.getProjectId())
+            TTSProject ttsProject = ttsProjectRepository.findById(projectId)
                     .orElseThrow(() -> new BusinessException(ErrorCode.PROJECT_NOT_FOUND));
 
             Map<String, String> fileUrlMap = ttsService.processTtsDetail(ttsMsgDto, ttsProject);
@@ -76,7 +80,7 @@ public class TaskConsumer {
 
             // TTSResponseDetailDto 생성 및 추가
             TTSResponseDetailDto responseDetail = TTSResponseDetailDto.builder()
-                    .id(ttsMsgDto.getDetailId())
+                    .id(detailId)
                     .projectId(ttsMsgDto.getProjectId())
                     .unitScript(ttsMsgDto.getUnitScript())
                     .unitSpeed(ttsMsgDto.getUnitSpeed())
@@ -90,26 +94,33 @@ public class TaskConsumer {
             ResponseDto response =  DataResponseDto.of(responseDetail);
 
 
-            // 메시지 처리 완료 시 1. RabbitMQ에 ACK 전송, 2. SSE로 전달, 3. 상태값 변환(완료)
+            // 메시지 처리 완료 시 (1. RabbitMQ에 ACK 전송, 2. SSE로 전달, 3. 상태값 변환(완료))
             channel.basicAck(tag, false);
-            updateStatus(ttsMsgDto.getDetailId(), TaskStatusConst.COMPLETED, "작업 완료");
-            sseController.sendStatusUpdate(ttsMsgDto.getProjectId(), response);
+            updateStatus(detailId, TaskStatusConst.COMPLETED, "작업 완료");
+            sseController.sendStatusUpdate(projectId, response);
 
 
-            System.out.println("TTS audio task completed successfully: " + message);
-
-
-        } catch (JsonProcessingException e) { // 상태값 변환(실패)
+        } catch (JsonProcessingException JsonError) { // 상태값 변환(실패)
             // JSON 파싱 에러 처리
-            System.err.println("Failed to parse message: " + e.getMessage());
+
+            updateStatus(detailId, TaskStatusConst.FAILED, "작업 실패");
+            sseController.sendStatusUpdate(projectId, null);
+
+            throw new BusinessException(ErrorCode.JSON_PROCESSING_ERROR);
+
         } catch (Exception e) { // 상태값 변환(실패)
-            System.err.println("Message processing failed: " + e.getMessage());
+
             try {
                 // Dead Letter로 메시지 전달
                 channel.basicNack(tag, false, false); // 메시지를 다시 처리하지 않고 DLQ로 이동
-            } catch (IOException ioException) {
-                System.err.println("Error while rejecting the message: " + ioException.getMessage());
+                updateStatus(detailId, TaskStatusConst.COMPLETED, "작업 실패");
+                sseController.sendStatusUpdate(projectId, null);
             }
+            catch (IOException ioException) {
+                updateStatus(detailId, TaskStatusConst.COMPLETED, "작업 실패");
+                sseController.sendStatusUpdate(projectId, null);
+            }
+
         }
     }
 
@@ -159,8 +170,8 @@ public class TaskConsumer {
     @Transactional
     public void updateStatus(Long id, TaskStatusConst newStatusConst, String msg) {
         // 1. Task 엔티티 조회
-        Task task = taskRepository.findByNameInJson(id);
-       //         .orElseThrow(() -> {throw new BusinessException(ErrorCode.TASK_NOT_FOUND);});
+        Task task = taskRepository.findByNameInJson(id)
+                .orElseThrow(() ->  new BusinessException(ErrorCode.TASK_NOT_FOUND));
 
         // 2. 최신 TaskHistory 조회
         TaskHistory latestHistory = historyRepository.findLatestTaskHistoryByTaskId(task.getId());
