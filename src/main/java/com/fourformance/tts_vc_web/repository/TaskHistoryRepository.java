@@ -12,6 +12,7 @@ public interface TaskHistoryRepository extends JpaRepository<TaskHistory, Long> 
     // 작업ID로 이전 작업 상태 찾기 - 승민
     @Query("SELECT th FROM TaskHistory th " +
             "WHERE th.task.id = :taskId " +
-            "ORDER BY th.created_at DESC")
+            "ORDER BY th.created_at DESC " +
+            "limit 1")
     TaskHistory findLatestTaskHistoryByTaskId(@Param("taskId") Long taskId);
 }

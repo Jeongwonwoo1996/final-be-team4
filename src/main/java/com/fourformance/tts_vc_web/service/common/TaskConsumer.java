@@ -65,8 +65,7 @@ public class TaskConsumer {
             TTSMsgDto ttsMsgDto = objectMapper.readValue(message, TTSMsgDto.class);
             projectId = ttsMsgDto.getProjectId();
             detailId  = ttsMsgDto.getDetailId();
-
-            taskId = taskRepository.findByNameInJson(detailId);
+            taskId    = ttsMsgDto.getTaskId();
 
             // 상태 업데이트
             updateStatus(taskId, TaskStatusConst.RUNNABLE, "작업 시작");
@@ -137,8 +136,7 @@ public class TaskConsumer {
             VCMsgDto vcMsgDto = objectMapper.readValue(message, VCMsgDto.class);
             projectId = vcMsgDto.getProjectId();
             detailId  = vcMsgDto.getDetailId();
-
-            taskId = taskRepository.findByNameInJson(detailId);
+            taskId    = vcMsgDto.getTaskId();
 
             // 상태 업데이트
             updateStatus(taskId, TaskStatusConst.RUNNABLE, "작업 시작");
@@ -154,6 +152,7 @@ public class TaskConsumer {
 
             ResponseDto response =  DataResponseDto.of(vcDetailsRes);
 
+            System.out.println("========================response.toString() = " + response.toString());
 
             // 메시지 처리 완료 시 (1. RabbitMQ에 ACK 전송, 2. SSE로 전달, 3. 상태값 변환(완료))
             channel.basicAck(tag, false);
