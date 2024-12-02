@@ -14,6 +14,8 @@ import com.fourformance.tts_vc_web.domain.entity.Task;
 import com.fourformance.tts_vc_web.domain.entity.TaskHistory;
 import com.fourformance.tts_vc_web.dto.common.TTSMsgDto;
 import com.fourformance.tts_vc_web.dto.common.VCMsgDto;
+import com.fourformance.tts_vc_web.dto.response.DataResponseDto;
+import com.fourformance.tts_vc_web.dto.response.ResponseDto;
 import com.fourformance.tts_vc_web.dto.tts.TTSResponseDetailDto;
 import com.fourformance.tts_vc_web.dto.tts.TTSResponseDto;
 import com.fourformance.tts_vc_web.repository.TTSProjectRepository;
@@ -61,24 +63,7 @@ public class TaskConsumer {
             System.out.println("ttsMsgDto.getTaskId() = " + ttsMsgDto.getTaskId());
 
             // 상태 업데이트
-
-//            updateStatus(ttsMsgDto.getTtsDetail().getId(), TaskStatusConst.RUNNABLE, "작업 시작");
-
-//            Task task = taskRepository.findByNameInJson(ttsMsgDto.getDetailId());
-            Task task = taskRepository.findById(ttsMsgDto.getTaskId())
-                    .orElseThrow(() -> new BusinessException(ErrorCode.TASK_NOT_FOUND));
-            System.out.println("task.getId: "+ task.getId());
-            TaskHistory latestHistory = historyRepository.findLatestTaskHistoryByTaskId(task.getId());
-            if (latestHistory == null) {
-                // 기본 TaskHistory를 생성
-                latestHistory = TaskHistory.createTaskHistory(task, TaskStatusConst.RUNNABLE, TaskStatusConst.RUNNABLE, "작업 시작");
-            }
-
-            System.out.println("task history찾기");
-
-            historyRepository.save(latestHistory);
-
-
+            updateStatus(ttsMsgDto.getDetailId(), TaskStatusConst.RUNNABLE, "작업 시작");
 
             // TTS 작업
             // ttsService.processTtsDetail 매개변수 수정하기 (TTSRequestDto -> ttsMsgDto로 변경)
@@ -102,23 +87,16 @@ public class TaskConsumer {
                     .apiUnitStatus(APIUnitStatusConst.SUCCESS)
                     .build();
 
-            // SSE로 상태 전송
-            sseController.sendStatusUpdate(ttsMsgDto.getProjectId(), responseDetail);
+            ResponseDto response =  DataResponseDto.of(responseDetail);
+
 
             // 메시지 처리 완료 시 1. RabbitMQ에 ACK 전송, 2. SSE로 전달, 3. 상태값 변환(완료)
-            // 메시지 ACK 전송
             channel.basicAck(tag, false);
-//
+            updateStatus(ttsMsgDto.getDetailId(), TaskStatusConst.COMPLETED, "작업 완료");
+            sseController.sendStatusUpdate(ttsMsgDto.getProjectId(), response);
 
- //           updateStatus(ttsMsgDto.getTtsDetail().getId(), TaskStatusConst.TERMINATED, "작업 완료");
 
             System.out.println("TTS audio task completed successfully: " + message);
-
-
-//            Task newTask = taskRepository.findByNameInJson(ttsMsgDto.getTtsDetail().getId());
-//            Task newTask = taskRepository.findById(ttsMsgDto.getTaskId())
-//                    .orElseThrow(() -> new BusinessException(ErrorCode.TASK_NOT_FOUND));
-
 
 
         } catch (JsonProcessingException e) { // 상태값 변환(실패)
@@ -178,19 +156,11 @@ public class TaskConsumer {
         }
     }
 
-//    @Transactional
-//    public void updateStatus(Long id, TaskStatusConst newStatusConst, String msg){
-//        Task task = taskRepository.findByNameInJson(id);
-//        TaskHistory latestHistory = historyRepository.findLatestTaskHistoryByTaskId(task.getId());
-//        TaskHistory taskHistory   = TaskHistory.createTaskHistory(task, latestHistory.getNewStatus(), newStatusConst, msg);
-//        historyRepository.save(taskHistory);
-//    }
-
     @Transactional
     public void updateStatus(Long id, TaskStatusConst newStatusConst, String msg) {
         // 1. Task 엔티티 조회
-        Task task = taskRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Task not found for id: " + id));
+        Task task = taskRepository.findByNameInJson(id);
+       //         .orElseThrow(() -> {throw new BusinessException(ErrorCode.TASK_NOT_FOUND);});
 
         // 2. 최신 TaskHistory 조회
         TaskHistory latestHistory = historyRepository.findLatestTaskHistoryByTaskId(task.getId());

@@ -1,5 +1,6 @@
 package com.fourformance.tts_vc_web.controller.common;
 
+import com.fourformance.tts_vc_web.dto.response.ResponseDto;
 import com.fourformance.tts_vc_web.dto.tts.TTSResponseDetailDto;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -40,7 +41,7 @@ public class SSEController {
      * @param clientId 사용자 ID
      * @param data 전송할 데이터
      */
-    public void sendStatusUpdate(Long clientId, TTSResponseDetailDto data) {
+    public void sendStatusUpdate(Long clientId, ResponseDto data) {
         SseEmitter emitter = clients.get(clientId);
         if (emitter != null) {
             try {

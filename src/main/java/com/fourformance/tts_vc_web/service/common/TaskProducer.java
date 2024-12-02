@@ -20,7 +20,7 @@ public class TaskProducer {
     public void sendTask(String taskType, Object messageDto) {
         try {
             String routingKey = getRoutingKey(taskType);
-
+            // 유람: 작업 추가
             String message = objectMapper.writeValueAsString(messageDto); // DTO를 JSON으로 직렬화
 
             rabbitTemplate.convertAndSend(TaskConfig.EXCHANGE_NAME, routingKey, message);

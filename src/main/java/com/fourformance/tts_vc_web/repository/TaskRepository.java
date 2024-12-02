@@ -9,7 +9,7 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface TaskRepository extends JpaRepository<Task, Long> {
 
-//    // 작업 데이터(Json)으로 데이터 찾기 - 승민
-//    @Query(value = "SELECT * FROM Task t WHERE JSON_EXTRACT(taskData, '$.ttsDetailId') = :ttsDetailId", nativeQuery = true)
-//    Task findByNameInJson(@Param("name") Long ttsDetailId);
+    // 작업 데이터(Json)으로 데이터 찾기 - 승민
+    @Query(value = "SELECT * FROM Task t WHERE JSON_EXTRACT(task_data, '$.id') = :id", nativeQuery = true)
+    Task findByNameInJson(@Param("id") Long id);
 }
