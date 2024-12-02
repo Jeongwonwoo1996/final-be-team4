@@ -17,74 +17,58 @@ public class SchedulerService {
 
 
     private final AmazonS3 amazonS3;
-
+    private final S3Service s3service;
     private final OutputAudioMetaRepository outputAudioMetaRepository;
 
     @Value("${cloud.aws.s3.bucket}")
     private String bucket;
 
 
-    public SchedulerService(AmazonS3 amazonS3, OutputAudioMetaRepository outputAudioMetaRepository) {
+    public SchedulerService(AmazonS3 amazonS3, S3Service s3service, OutputAudioMetaRepository outputAudioMetaRepository) {
         this.amazonS3 = amazonS3;
+        this.s3service = s3service;
         this.outputAudioMetaRepository = outputAudioMetaRepository;
     }
 
-    public void RecheckdeleteAllS3Audio() {
+    public void recheckDeleteAllS3Audio() {
 
-//        // 1. 파일경로 생성
-//        List<OutputAudioMeta> deleteMetaList = outputAudioMetaRepository.findByIsDeletedTrue();
-//        // 2. 그 id의 isDeleted가 true면 그 id 의 파일이름으로 객체를 삭제한다.
-////
-//        for(OutputAudioMeta meta : deleteMetaList) {
-//            String filePath = meta.getBucketRoute();
+        // 1. 파일경로 생성
+        List<OutputAudioMeta> deleteMetaList = outputAudioMetaRepository.findByIsDeletedTrue();
+        // 2. 그 id의 isDeleted가 true면 그 id 의 파일이름으로 객체를 삭제한다.
 //
-//            try {
-//                // 파일존개 여부 확인.
-//                if (amazonS3.doesObjectExist(bucket, filePath)) {
-//                    amazonS3.deleteObject(bucket, filePath);
-//                    System.out.println("Deleted S3 filePath = " + filePath);
-//                } else {
-//                    System.out.println("S3 file not found (already deleted): " + filePath);
-//                }
-//            }catch (AmazonS3Exception e) {
-//                System.out.println("Failed to delete S3 file: " + filePath);
+        for(OutputAudioMeta meta : deleteMetaList) {
+
+            s3service.deleteAudioOutput(meta.getId());
+
+            s3service.deleteAudioMember(meta.getId());
+        }
+
+
+
+        // 멀티쓰레드
+//        List<OutputAudioMeta> outputAudioMetaList = outputAudioMetaRepository.findByIsDeletedTrue();
+//
+//        int threadPoolSize = 10; // 사용할 스레드 갯수 일반적으로 10~20개의 스레드로 설정
+//        ExecutorService executorService = Executors.newFixedThreadPool(threadPoolSize);
+//
+//        // 작업시작
+//        for(OutputAudioMeta outputAudio : outputAudioMetaList) {
+//            executorService.submit(() -> { // 각 파일 삭제 작업을 스레드 풀에 제출
+//                s3service.deleteAudioOutput(outputAudio.getId());
+//            });
+//        }
+//
+//        // 스레드풀 셧다운
+//        executorService.shutdown();
+//        try{
+//            // 스레드풀이 모든 작업을 완료할 때까지 대기
+//            if (!executorService.awaitTermination(60, TimeUnit.SECONDS)) { // 기다리는 텀 초단위 60초임
+//                System.err.println("Timeout while waiting for S3 deletion tasks to complete.");
 //            }
+//        } catch(InterruptedException e) {
+//            Thread.currentThread().interrupt();
 //
 //        }
-
-        List<OutputAudioMeta> outputAudioMetaList = outputAudioMetaRepository.findByIsDeletedTrue();
-
-        int threadPoolSize = 10; // 사용할 스레드 갯수 일반적으로 10~20개의 스레드로 설정
-        ExecutorService executorService = Executors.newFixedThreadPool(threadPoolSize);
-
-        // 작업시작
-        for(OutputAudioMeta outputAudioMeta : outputAudioMetaList) {
-            executorService.submit(() -> { // 각 파일 삭제 작업을 스레드 풀에 제출
-                String filePath = outputAudioMeta.getBucketRoute();
-                try{
-                    // S3파일 존재 여부 확인 후 삭제
-                    if(amazonS3.doesObjectExist(bucket, filePath)) {
-                        amazonS3.deleteObject(bucket, filePath);
-                    } else {
-
-                    }
-                }catch (AmazonS3Exception e) {
-                    e.printStackTrace(); // 임시
-                }
-            });
-        }
-
-        // 스레드풀 셧다운
-        executorService.shutdown();
-        try{
-            // 스레드풀이 모든 작업을 완료할 때까지 대기
-            if (!executorService.awaitTermination(60, TimeUnit.SECONDS)) { // 기다리는 텀 초단위 60초임
-                System.err.println("Timeout while waiting for S3 deletion tasks to complete.");
-            }
-        } catch(InterruptedException e) {
-            Thread.currentThread().interrupt();
-
-        }
 
     }
 

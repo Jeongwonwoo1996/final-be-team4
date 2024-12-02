@@ -46,6 +46,8 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -70,6 +72,7 @@ public class S3Service {
     private final MemberRepository memberRepository;
     private final VCProjectRepository vcProjectRepository;
     private final ConcatDetailRepository concatDetailRepository;
+//    private final ExecutorService executorService; // 멀티스레드 처리용 스레드 풀
 
     private final AmazonS3 amazonS3;
 
@@ -683,4 +686,19 @@ public class S3Service {
             throw new BusinessException(ErrorCode.FILE_PROCESSING_ERROR);
         }
     }
+
+
+//    // 스케줄러
+//    public void recheckDeleteAllS3Audio() {
+//        List<OutputAudioMeta> outputAudioMetaList = outputAudioMetaRepository.findByIsDeletedTrue();
+//
+//        for(OutputAudioMeta outputAudioMeta : outputAudioMetaList) {
+//            executorService.submit(()-> {
+//                        deleteAudioOutput(outputAudioMeta.getId());
+//            });
+//        }
+//
+//
+//    }
+
 }
