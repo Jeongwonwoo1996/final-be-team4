@@ -102,7 +102,6 @@ public class TaskConsumer {
 
             updateStatus(taskId, TaskStatusConst.FAILED, "작업 실패");
             sseService.sendToClient(projectId, null);
-
             throw new BusinessException(ErrorCode.JSON_PROCESSING_ERROR);
 
         } catch (Exception e) {
@@ -126,21 +125,51 @@ public class TaskConsumer {
     @RabbitListener(queues = TaskConfig.VC_QUEUE)
     public void handleVCTask(String message, Channel channel, @Header(AmqpHeaders.DELIVERY_TAG) long tag) {
 
-        System.out.println("VC audio task : " + message);
+        Long projectId = -1L;
+        Long detailId  = -1L;
+        Long taskId    = -1L;
 
-        // 처리 로직 구현
-        try{
+        try {
             // meassage(String) -> TTSMsgDto 로 역직렬화
             VCMsgDto vcMsgDto = objectMapper.readValue(message, VCMsgDto.class);
+            projectId = vcMsgDto.getProjectId();
+            detailId  = vcMsgDto.getDetailId();
+
+            taskId = taskRepository.findByNameInJson(detailId);
 
             // 상태 업데이트
-  //          updateStatus(vcMsgDto.getVcDetail().getId(), TaskStatusConst.RUNNABLE, "작업 시작");
+            updateStatus(taskId, TaskStatusConst.RUNNABLE, "작업 시작");
+            sseService.sendToClient(projectId, "TTS 작업이 시작되었습니다.");
+
+            // VC 작업
 
 
 
-        }catch(Exception e){
-            // 실패 상태로 업데이트
-            System.out.println("TTS 처리 실패"+e);
+            ResponseDto response =  DataResponseDto.of("");
+
+
+            // 메시지 처리 완료 시 (1. RabbitMQ에 ACK 전송, 2. SSE로 전달, 3. 상태값 변환(완료))
+            channel.basicAck(tag, false);
+            updateStatus(taskId, TaskStatusConst.COMPLETED, "작업 완료");
+            sseService.sendToClient(projectId, response);
+
+
+        }catch (JsonProcessingException JsonError) { // JSON 파싱 에러 처리
+
+            updateStatus(taskId, TaskStatusConst.FAILED, "작업 실패");
+            sseService.sendToClient(projectId, null);
+            throw new BusinessException(ErrorCode.JSON_PROCESSING_ERROR);
+
+        } catch (Exception e) {
+
+            try { // Dead Letter Queue로 메시지 전달
+                channel.basicNack(tag, false, false);
+                updateStatus(taskId, TaskStatusConst.FAILED, "작업 실패");
+            }
+            catch (IOException ioException) {
+                updateStatus(taskId, TaskStatusConst.FAILED, "작업 실패");
+                sseService.sendToClient(projectId, null);
+            }
         }
     }
 
