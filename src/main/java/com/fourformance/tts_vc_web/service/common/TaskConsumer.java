@@ -17,10 +17,12 @@ import com.fourformance.tts_vc_web.dto.common.VCMsgDto;
 import com.fourformance.tts_vc_web.dto.response.DataResponseDto;
 import com.fourformance.tts_vc_web.dto.response.ResponseDto;
 import com.fourformance.tts_vc_web.dto.tts.TTSResponseDetailDto;
+import com.fourformance.tts_vc_web.dto.vc.VCDetailResDto;
 import com.fourformance.tts_vc_web.repository.TTSProjectRepository;
 import com.fourformance.tts_vc_web.repository.TaskHistoryRepository;
 import com.fourformance.tts_vc_web.repository.TaskRepository;
 import com.fourformance.tts_vc_web.service.tts.TTSService_TaskJob;
+import com.fourformance.tts_vc_web.service.vc.VCService_TaskJob;
 import lombok.RequiredArgsConstructor;
 import com.rabbitmq.client.Channel;
 
@@ -31,6 +33,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
 @Component
@@ -42,7 +45,7 @@ public class TaskConsumer {
     private final TaskHistoryRepository historyRepository;
     private final TTSService_TaskJob ttsService;
     private final TTSProjectRepository ttsProjectRepository;
-    private final SSEController sseController;
+    private final VCService_TaskJob vcService;
     private final SseEmitterService sseService;
 
 
@@ -53,7 +56,7 @@ public class TaskConsumer {
     @RabbitListener(queues = TaskConfig.TTS_QUEUE, ackMode = "MANUAL")
     public void handleTTSTask(String message, Channel channel, @Header(AmqpHeaders.DELIVERY_TAG) long tag) {
 
-        Long projectId = -1L;
+         Long projectId = -1L;
         Long detailId  = -1L;
         Long taskId    = -1L;
 
@@ -142,10 +145,14 @@ public class TaskConsumer {
             sseService.sendToClient(projectId, "TTS 작업이 시작되었습니다.");
 
             // VC 작업
+            VCDetailResDto vcDetailsRes = vcService.processSourceFile(vcMsgDto);
 
 
+            // 프로젝트 상태 업데이트
+            vcService.updateProjectStatus(projectId);
 
-            ResponseDto response =  DataResponseDto.of("");
+
+            ResponseDto response =  DataResponseDto.of(vcDetailsRes);
 
 
             // 메시지 처리 완료 시 (1. RabbitMQ에 ACK 전송, 2. SSE로 전달, 3. 상태값 변환(완료))
