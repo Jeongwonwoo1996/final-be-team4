@@ -76,7 +76,7 @@ public class QConcatDetail extends EntityPathBase<ConcatDetail> {
 
     public QConcatDetail(Class<? extends ConcatDetail> type, PathMetadata metadata, PathInits inits) {
         super(type, metadata, inits);
-        this.concatProject = inits.isInitialized("concatProject") ? new QConcatProject(forProperty("concatProject")) : null;
+        this.concatProject = inits.isInitialized("concatProject") ? new QConcatProject(forProperty("concatProject"), inits.get("concatProject")) : null;
         this.memberAudioMeta = inits.isInitialized("memberAudioMeta") ? new QMemberAudioMeta(forProperty("memberAudioMeta"), inits.get("memberAudioMeta")) : null;
     }
 
