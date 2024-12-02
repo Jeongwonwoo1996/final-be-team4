@@ -71,6 +71,21 @@ public class VCService_TaskJob {
                 .map(VCDetailDto::createVCDetailDtoWithLocalFileName)
                 .collect(Collectors.toList());
 
+        // Step 5: 저장된 타겟(TRG) 오디오 정보 가져오기
+        MemberAudioMeta memberAudio = memberAudioMetaRepository.findSelectedAudioByTypeAndMember(AudioType.VC_TRG, memberId);
+
+        String voiceId;
+        if (memberAudio != null) {
+            // Step 6: 타겟 오디오로 Voice ID 생성
+            voiceId = processTargetFiles(vcReqDto.getTrgFiles(), memberAudio);
+
+        }else{
+            voiceId = memberAudioMetaRepository.findtrgVoiceIdById(vcReqDto.getTrgFiles().get(0).getS3MemberAudioMetaId());
+        }
+
+        // Step 7: VC 프로젝트에 trg_voice_id 업데이트
+        updateProjectTargetVoiceId(projectId, voiceId);
+
         // vcDetailDtos에서 하나씩 꺼내서 Task 생성하고 큐에 넣기
         for (VCDetailDto detail : vcDetailDtos) {
             // dto를 문자열 json으로 변환
@@ -81,7 +96,7 @@ public class VCService_TaskJob {
             taskRepository.save(task);
 
             // 메시지 생성 및 RabbitMQ에 전송
-            VCMsgDto message = createVCMsgDto(detail, task.getId(), memberId, vcProject.getTrgVoiceId());
+            VCMsgDto message = createVCMsgDto(detail, task.getId(), memberId, voiceId);
             taskProducer.sendTask("AUDIO_VC", message);
         }
     }
@@ -117,5 +132,35 @@ public class VCService_TaskJob {
                 .unitScript(detail.getUnitScript())
                 .localFileName(detail.getLocalFileName())
                 .build();
+    }
+
+    /**
+     * 타겟 오디오 파일 처리 및 Voice ID 생성 ->  월 한도 제한으로 하드코딩 함
+     */
+    private String processTargetFiles(List<TrgAudioFileRequestDto> trgFiles, MemberAudioMeta memberAudio) {
+        if (trgFiles == null || trgFiles.isEmpty()) {
+            throw new BusinessException(ErrorCode.FILE_PROCESSING_ERROR);
+        }
+        try {
+            // 하드코딩된 Voice ID 사용
+            String voiceId = "DNSy71aycodz7FWtd91e"; // 테스트용 하드코딩
+
+            // Voice ID를 MemberAudioMeta에 업데이트
+            memberAudio.update(voiceId);
+            memberAudioMetaRepository.save(memberAudio);
+
+            return voiceId;
+        } catch (Exception e) {
+            throw new BusinessException(ErrorCode.FILE_PROCESSING_ERROR);
+        }
+    }
+    /**
+     * VC 프로젝트에 trg_voice_id 업데이트
+     */
+    private void updateProjectTargetVoiceId(Long projectId, String trgVoiceId) {
+        VCProject vcProject = vcProjectRepository.findById(projectId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.PROJECT_NOT_FOUND));
+        vcProject.updateTrgVoiceId(trgVoiceId);
+        vcProjectRepository.save(vcProject);
     }
 }
