@@ -1,24 +1,23 @@
 package com.fourformance.tts_vc_web.service.tts;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fourformance.tts_vc_web.common.constant.APIStatusConst;
 import com.fourformance.tts_vc_web.common.constant.APIUnitStatusConst;
+import com.fourformance.tts_vc_web.common.constant.ProjectType;
 import com.fourformance.tts_vc_web.common.exception.common.BusinessException;
 import com.fourformance.tts_vc_web.common.exception.common.ErrorCode;
 import com.fourformance.tts_vc_web.common.util.CommonFileUtils;
 import com.fourformance.tts_vc_web.common.util.GoogleTTSClient;
-import com.fourformance.tts_vc_web.domain.entity.APIStatus;
-import com.fourformance.tts_vc_web.domain.entity.TTSDetail;
-import com.fourformance.tts_vc_web.domain.entity.TTSProject;
+import com.fourformance.tts_vc_web.domain.entity.*;
 import com.fourformance.tts_vc_web.dto.common.TTSMsgDto;
 import com.fourformance.tts_vc_web.dto.tts.TTSRequestDetailDto;
 import com.fourformance.tts_vc_web.dto.tts.TTSRequestDto;
 import com.fourformance.tts_vc_web.dto.tts.TTSResponseDetailDto;
 import com.fourformance.tts_vc_web.dto.tts.TTSResponseDto;
-import com.fourformance.tts_vc_web.repository.APIStatusRepository;
-import com.fourformance.tts_vc_web.repository.TTSDetailRepository;
-import com.fourformance.tts_vc_web.repository.TTSProjectRepository;
-import com.fourformance.tts_vc_web.repository.VoiceStyleRepository;
+import com.fourformance.tts_vc_web.repository.*;
 import com.fourformance.tts_vc_web.service.common.S3Service;
+import com.fourformance.tts_vc_web.service.common.TaskProducer;
 import com.google.cloud.texttospeech.v1.*;
 import com.google.protobuf.ByteString;
 import lombok.RequiredArgsConstructor;
@@ -45,6 +44,10 @@ public class TTSService_TaskJob {
     private final TTSService_team_multi ttsServiceTeamMulti; // 통합 서비스 호출을 위한 클래스
     private final S3Service s3Service; // S3 파일 업로드를 처리하는 서비스
     private final GoogleTTSClient googleTTSClient; // GoogleTTSClient 주입
+    private final TaskRepository taskRepository;
+    private final TaskProducer taskProducer;
+    private final ProjectRepository projectRepository;
+    private final ObjectMapper objectMapper; // JSON 직렬화를 위한 ObjectMapper
 
     private static final Logger LOGGER = Logger.getLogger(TTSService_TaskJob.class.getName()); // 로그 기록을 위한 Logger
 
@@ -464,5 +467,101 @@ public class TTSService_TaskJob {
         }
     }
 
+    @Transactional
+    public void enqueueTTSBatchTasks(TTSRequestDto ttsRequestDto, Long memberId) {
+        // 요청 데이터 유효성 검사
+        validateRequestData(ttsRequestDto);
+
+        // 프로젝트 저장
+        TTSProject ttsProject = saveOrUpdateProject(ttsRequestDto, memberId);
+
+
+        // 디테일별 작업 처리
+        for (TTSRequestDetailDto detail : ttsRequestDto.getTtsDetails()) {
+            // 디테일 저장
+            TTSDetail ttsDetail = saveOrUpdateDetail(detail, ttsProject);
+
+            // 엔티티를 DTO로 변환
+            TTSRequestDetailDto updatedDetailDto = convertToDto(ttsDetail);
+
+            // 디테일 DTO를 JSON으로 변환
+            String detailJson = convertDetailToJson(updatedDetailDto);
+
+            // Task 생성 및 저장
+            Task task = Task.createTask(ttsProject, ProjectType.TTS, detailJson);
+            taskRepository.save(task);
+
+            // 메시지 생성 및 RabbitMQ에 전송
+            TTSMsgDto message = createTTSMsgDto(updatedDetailDto, task.getId());
+            taskProducer.sendTask("AUDIO_TTS", message);
+        }
+    }
+
+    /**
+     * 요청 데이터 유효성 검사
+     *
+     * @param ttsRequestDto 요청 데이터
+     */
+    private void validateRequestData(TTSRequestDto ttsRequestDto) {
+        if (ttsRequestDto == null || ttsRequestDto.getTtsDetails() == null || ttsRequestDto.getTtsDetails().isEmpty()) {
+            throw new BusinessException(ErrorCode.INVALID_REQUEST_DATA);
+        }
+    }
+
+    /**
+     * 디테일 데이터를 JSON 문자열로 변환
+     *
+     * @param detail 디테일 데이터
+     * @return JSON 문자열
+     */
+    private String convertDetailToJson(TTSRequestDetailDto detail) {
+        try {
+            return objectMapper.writeValueAsString(detail);
+        } catch (JsonProcessingException e) {
+            throw new BusinessException(ErrorCode.JSON_PROCESSING_ERROR);
+        }
+    }
+
+    /**
+     * TTS 메시지 DTO 생성
+     *
+     * TTSRequestDetailDto를 TTSMsgDto로 변환하는 메서드
+     *
+     * @param detail 디테일 데이터
+     * @param taskId 작업 ID
+     * @return 메시지 DTO
+     */
+    private TTSMsgDto createTTSMsgDto(TTSRequestDetailDto detail, Long taskId) {
+        return TTSMsgDto.builder()
+                .taskId(taskId)          // 생성된 Task ID
+                .detailId(detail.getId()) // detailId
+                .projectId(detail.getProjectId())
+                .unitScript(detail.getUnitScript())
+                .unitSpeed(detail.getUnitSpeed())
+                .unitPitch(detail.getUnitPitch())
+                .unitVolume(detail.getUnitVolume())
+                .unitVoiceStyleId(detail.getUnitVoiceStyleId())
+                .build();
+    }
+
+    /**
+     * TTSDetail 엔티티를 TTSRequestDetailDto로 변환
+     */
+    private TTSRequestDetailDto convertToDto(TTSDetail ttsDetail) {
+        return TTSRequestDetailDto.builder()
+                .id(ttsDetail.getId())
+                .projectId(ttsDetail.getTtsProject().getId())
+                .unitScript(ttsDetail.getUnitScript())
+                .unitSpeed(ttsDetail.getUnitSpeed())
+                .unitPitch(ttsDetail.getUnitPitch())
+                .unitVolume(ttsDetail.getUnitVolume())
+                .UnitVoiceStyleId(ttsDetail.getVoiceStyle() != null ? ttsDetail.getVoiceStyle().getId() : null)
+                .isDeleted(ttsDetail.getIsDeleted())
+                .unitSequence(ttsDetail.getUnitSequence())
+                .build();
+    }
 }
+
+
+
 
