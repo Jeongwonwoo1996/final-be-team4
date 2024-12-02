@@ -82,4 +82,8 @@ public interface OutputAudioMetaRepository extends JpaRepository<OutputAudioMeta
             "                         WHERE o.id = :outputAudioMetaId) " +
             "AND d.isDeleted = false")
     List<String> findConcatDetailScriptsByOutputAudioMetaId(@Param("outputAudioMetaId") Long outputAudioMetaId);
+
+
+    // `isDeleted = true` 조건으로 데이터를 조회 - 소정
+    List<OutputAudioMeta> findByIsDeletedTrue();
 }
