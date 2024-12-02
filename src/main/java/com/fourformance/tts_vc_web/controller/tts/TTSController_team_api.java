@@ -27,9 +27,6 @@ import java.util.logging.Logger;
 @RequiredArgsConstructor
 public class TTSController_team_api {
 
-    private static final Logger LOGGER = Logger.getLogger(TTSController_team_api.class.getName()); // 로깅을 위한 Logger
-
-    private final TTSService_team_api ttsService; // TTS 변환 로직을 처리하는 서비스
     private final TTSService_TaskJob ttsServiceTaskJob;
 
 
@@ -50,7 +47,6 @@ public class TTSController_team_api {
             @RequestBody TTSRequestDto ttsRequestDto,
             HttpSession session) {
 
-//        session.setAttribute("memberId",1L);
         Long memberId = (Long) session.getAttribute("memberId");
 
         // 세션에 memberId 값이 설정되지 않았다면 예외 처리
@@ -58,12 +54,14 @@ public class TTSController_team_api {
             throw new BusinessException(ErrorCode.SESSION_MEMBER_ID_NOT_SET);
         }
 
-        // 임시 하드 코딩. 세션에 memberId 값 설정
-//        Long memberId = (Long) session.getAttribute("memberId");
-
         ttsServiceTaskJob.enqueueTTSBatchTasks(ttsRequestDto, memberId);
 
         return DataResponseDto.of("TTS 작업이 큐에 추가되었습니다.");
+//        return DataResponseDto.of(Map.of(
+//                "message", "TTS 작업이 큐에 추가되었습니다.",
+//                "projectId", ttsRequestDto.getProjectId(),
+//                "memberId", memberId
+//        ));
 
     }
 

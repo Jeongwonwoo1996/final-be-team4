@@ -36,6 +36,7 @@ import java.util.logging.Logger;
 public class VCController_team_api {
 
     private static final Logger LOGGER = Logger.getLogger(VCController_team_api.class.getName());
+    private final VCService_team_api vcService;
     private final VCService_TaskJob vcServiceTask;
 
     /**
@@ -67,9 +68,9 @@ public class VCController_team_api {
         // 요청 데이터 유효성 검사
         validateRequestData(VCSaveRequestDto);
 
-        vcServiceTask.enqueueVCTasks(VCSaveRequestDto, memberId);
+        vcServiceTask.enqueueVCTasks(VCSaveRequestDto, files, memberId);
 
-        return DataResponseDto.of("VC 작업이 큐에 추가되었습니다.");
+        return DataResponseDto.of("vc 작업이 큐에 추가되었습니다.");
     }
 
     /**
@@ -80,13 +81,10 @@ public class VCController_team_api {
      */
     private void validateRequestData(VCSaveRequestDto vcSaveRequestDto) {
         if (vcSaveRequestDto == null) {
-            LOGGER.warning("요청 데이터가 null입니다.");
             throw new BusinessException(ErrorCode.INVALID_REQUEST_DATA);
         }
         if (vcSaveRequestDto.getTrgFiles() == null || vcSaveRequestDto.getTrgFiles().isEmpty()) {
-            LOGGER.warning("요청 데이터에 타겟 오디오 파일이 없습니다.");
             throw new BusinessException(ErrorCode.INVALID_REQUEST_FILE_DATA);
         }
-        LOGGER.info("요청 데이터 유효성 검사 통과");
     }
 }
