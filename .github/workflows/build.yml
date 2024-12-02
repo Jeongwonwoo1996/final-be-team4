@@ -1,62 +1,40 @@
-name: Gradle Build and Docker Deploy
+name: Deploy to EC2
 
 on:
   push:
-    branches: [ "main" ]
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
-  build:
+  Kill:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
+      - name: kill
+        uses: appleboy/ssh-action@master
         with:
-          java-version: "17"
-          distribution: "temurin"
-
-      - name: Setup Gradle cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
-
-      - name: Grant execute permission for gradlew
-        run: chmod +x gradlew
-
-      - name: Create properties files
-        run: |
-          mkdir -p src/main/resources
-          echo "${{ secrets.SECRET_PROPERTIES }}" > src/main/resources/secret.properties
-          echo "${{ secrets.SOUND_JSON }}" > src/main/resources/StableFurnaceProject1.json
-
-      - name: Set GOOGLE_APPLICATION_CREDENTIALS
-        run: echo "GOOGLE_APPLICATION_CREDENTIALS=src/main/resources/StableFurnaceProject1.json" >> $GITHUB_ENV
-
-      - name: Build with Gradle
-        run: ./gradlew build -x test
-
-      - name: Docker Login
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-
-      - name: Build and Push Docker Image
-        run: |
-          docker build -t backend:latest .
-          docker tag backend:latest popomance/backend:latest
-          docker push popomance/backend:latest
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            set -e 
+            PIDS=$(sudo ps aux | grep "java -jar" | grep -v grep | awk '{print $2}')
+            if [ ! -z "$PIDS" ]; then
+              echo "Found Java processes: $PIDS"
+              for PID in $PIDS; do
+                echo "Attempting to stop process $PID"
+                sudo kill -SIGTERM $PID || sudo kill -9 $PID || true
+              done
+              sleep 5
+            else
+              echo "No Java processes found"
+            fi
+            sudo ps aux | grep "java -jar" || true
+            exit 0
 
   deploy:
-    needs: build
     runs-on: ubuntu-latest
+    needs: Kill
     steps:
       - name: Deploy to EC2
         uses: appleboy/ssh-action@master
@@ -64,29 +42,55 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          port: 22
           script: |
-            sudo docker pull popomance/backend:latest
-            sudo docker stop backend || true
-            sudo docker rm backend || true
-            sudo docker run -d -p 8080:8080 --name backend popomance/backend:latest
-            sudo docker system prune -f -a
+            # 환경 설정
+            APP_DIR=~/backend
 
-                   컨테이너 로그 출력
-                        echo "=== Docker Container Logs ==="
-                        sudo docker logs --tail 50 backend
+            echo "Removing old backend directory and cloning repository..."
+            rm -rf $APP_DIR
+            git clone https://github.com/FC-DEV-FinalProject/final-be-team4.git $APP_DIR
+            cd $APP_DIR
+            mkdir -p src/main/resources
 
-      - name: Notify Slack - Success
-        if: success()
-        run: |
-          curl -X POST -H 'Content-type: application/json' --data '{
-            "text": ":white_check_mark: 백엔드 배포가 성공적으로 완료되었습니다."
-          }' ${{ secrets.SLACK_WEBHOOK_URL }}
+            # secret.properties 파일 생성
+            echo "Creating secret.properties file..."
+            echo "${{ secrets.SECRET_PROPERTIES }}" > src/main/resources/secret.properties
 
+            # StableFurnaceProject1.json 파일 생성
+            echo "Creating StableFurnaceProject1.json file..."
+            cat <<EOF > src/main/resources/StableFurnaceProject1.json
+            {
+              "type": "service_account",
+              "project_id": "${{ secrets.PROJECT_ID }}",
+              "private_key_id": "${{ secrets.PRIVATE_KEY_ID }}",
+              "private_key": "${{ secrets.PRIVATE_KEY }}",
+              "client_email": "${{ secrets.CLIENT_EMAIL }}",
+              "client_id": "${{ secrets.CLIENT_ID }}",
+              "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+              "token_uri": "${{ secrets.TOKEN_URI }}",
+              "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+              "client_x509_cert_url": "${{ secrets.CLIENT_X509_CERT_URL }}",
+              "universe_domain": "googleapis.com"
+            }
+            EOF
 
-      # - name: Notify Slack - Failure
-      #   if: failure()
-      #   run: |
-      #     curl -X POST -H 'Content-type: application/json' --data '{
-      #       "text": ":x: 백엔드 배포 중 오류가 발생했습니다."
-      #     }' ${{ secrets.SLACK_WEBHOOK_URL }}
+            echo "Building the project with Gradle..."
+            chmod +x gradlew
+            ./gradlew build -x test
+
+            # 안정화 시간 추가
+            sleep 5
+
+            # 새 애플리케이션 실행
+            echo "Starting the new application..."
+            sudo nohup java -jar build/libs/tts_vc_web-0.0.1-SNAPSHOT.jar > app.log 2>&1 &
+            sleep 5
+            if pgrep -f "java -jar" > /dev/null; then
+              echo "Application started successfully."
+            else
+              echo "Application failed to start."
+              exit 1
+            fi
+
+            # 명시적인 성공 상태 반환
+            exit 0

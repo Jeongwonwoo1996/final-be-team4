@@ -5,11 +5,12 @@ import com.fourformance.tts_vc_web.common.exception.common.ErrorCode;
 import com.fourformance.tts_vc_web.dto.member.*;
 import com.fourformance.tts_vc_web.dto.response.DataResponseDto;
 import com.fourformance.tts_vc_web.dto.response.ResponseDto;
-import com.fourformance.tts_vc_web.service.member.MemberService_team_api_wonwoo;
+import com.fourformance.tts_vc_web.service.member.MemberService_wonwoo;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -18,9 +19,9 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/member")
 @RequiredArgsConstructor
 @Tag(name = "Member Controller", description = "회원 관리와 관련된 작업")
-public class MemberController_team_api_wonwoo {
+public class MemberController_wonwoo {
 
-    private final MemberService_team_api_wonwoo memberService;
+    private final MemberService_wonwoo memberService;
 
     /**
      * 회원 로그인
@@ -34,12 +35,19 @@ public class MemberController_team_api_wonwoo {
     @PostMapping("/login")
     public ResponseDto login(
             @RequestBody MemberLoginRequestDto requestDto,
-            HttpSession session) {
+            HttpServletRequest request) {
 
         // 로그인 처리
         MemberLoginResponseDto memberLoginResponseDto = memberService.login(requestDto);
 
-        // 세션에 로그인 정보 저장
+        // 기존 세션이 있으면 무효화
+        HttpSession oldSession = request.getSession(false);
+        if (oldSession != null) {
+            oldSession.invalidate();
+        }
+
+        // 새로운 세션 생성
+        HttpSession session = request.getSession(true);
         session.setAttribute("memberId", memberLoginResponseDto.getId());
         session.setAttribute("email", memberLoginResponseDto.getEmail());
 

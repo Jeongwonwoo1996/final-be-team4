@@ -42,6 +42,7 @@ public interface MemberAudioMetaRepository extends JpaRepository<MemberAudioMeta
             @Param("audioType") AudioType audioType
     );
 
+
     // 특정 id와 audio type 으로 객체 반환 - 승민
     @Query("SELECT m FROM MemberAudioMeta m WHERE m.id = :id AND m.audioType = :audioType")
     MemberAudioMeta findByIdAndAudioType(

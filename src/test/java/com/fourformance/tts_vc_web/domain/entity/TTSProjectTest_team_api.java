@@ -34,7 +34,7 @@ class TTSProjectTest_team_api {
     public void TTS프로젝트_생성_테스트() {
         // given - 멤버와 TTS 프로젝트 객체 생성
         Member member = Member.createMember("test@example.com", "password", "Alice", 1,
-                LocalDateTime.now(), "010-1234-5678");
+                LocalDateTime.now(), "010-1234-5678",true);
         memberRepository.save(member);
 
         TTSProject project = TTSProject.createTTSProject(member, "Sample Project",null,null,null,null,null);
@@ -56,7 +56,7 @@ class TTSProjectTest_team_api {
     public void TTS프로젝트_업데이트_테스트() {
         // given - 멤버와 TTS 프로젝트 객체 생성 후 저장
         Member member = Member.createMember("test@example.com", "password", "Alice", 1,
-                LocalDateTime.now(), "010-1234-5678");
+                LocalDateTime.now(), "010-1234-5678",true);
         memberRepository.save(member);
 
         TTSProject project = TTSProject.createTTSProject(member, "Old Project",null,null,null,null,null);
@@ -85,7 +85,7 @@ class TTSProjectTest_team_api {
     public void TTS프로젝트_API상태_업데이트_테스트() {
         // given - 멤버와 TTS 프로젝트 객체 생성 후 저장
         Member member = Member.createMember("test@example.com", "password", "Alice", 1,
-                LocalDateTime.now(), "010-1234-5678");
+                LocalDateTime.now(), "010-1234-5678",true);
         memberRepository.save(member);
 
         TTSProject project = TTSProject.createTTSProject(member, "API Project",null,null,null,null,null);
@@ -113,7 +113,7 @@ class TTSProjectTest_team_api {
     public void TTS프로젝트_삭제_테스트() {
         // given - 멤버와 TTS 프로젝트 객체 생성 후 저장
         Member member = Member.createMember("test@example.com", "password", "Alice", 1,
-                LocalDateTime.now(), "010-1234-5678");
+                LocalDateTime.now(), "010-1234-5678",true);
         memberRepository.save(member);
 
         TTSProject project = TTSProject.createTTSProject(member, "Delete Test Project",null,null,null,null,null);

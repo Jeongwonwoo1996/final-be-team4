@@ -19,7 +19,5 @@ public class TTSResponseDto {
     private Float globalPitch;
     private Float globalVolume;
     private APIStatusConst apiStatus;
-
-
     private List<TTSResponseDetailDto> ttsDetails;
 }

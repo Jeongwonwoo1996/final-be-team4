@@ -31,7 +31,7 @@ public class ProjectService_team_multi {
      *
      * TTS 프로젝트, TTS Detail, 생성된 오디오 데이터들을 삭제합니다. (isDeleted = true)
      *
-     * @param Long projectId : 프로젝트 ID
+     * @param projectId : 프로젝트 ID
      * @throws BusinessException NOT_EXISTS_PROJECT : 프로젝트 ID가 없을 때 발생
      *                           SERVER_ERROR       : 내부 코드 에러일 때 발생
      */
@@ -131,7 +131,7 @@ public class ProjectService_team_multi {
      *
      * VC 프로젝트, VC Detail, 생성된 오디오, Src 오디오 데이터들을 삭제합니다. (isDeleted = true)
      *
-     * @param Long projectId : 프로젝트 ID
+     * @param projectId : 프로젝트 ID
      * @throws BusinessException NOT_EXISTS_PROJECT : 프로젝트 ID가 없을 때 발생
      *                           SERVER_ERROR       : 내부 코드 에러일 때 발생
      */
@@ -166,8 +166,7 @@ public class ProjectService_team_multi {
             }
 
             // 4. VC src 오디오 isDeleted 설정
-
-            List<Long> memberAudioIds = memberAudioVCRepository.findMemberAudioMetaByVcProjectId(projectId);
+            List<Long> memberAudioIds = vcDetailRepository.findMemberAudioIdsByVcDetailIds(vcDetailIds);
             List<MemberAudioMeta> memberAudioList = memberAudioMetaRepository.findByMemberAudioIds(memberAudioIds, AudioType.VC_SRC);
 
             for (MemberAudioMeta memberAudioMeta : memberAudioList) {
