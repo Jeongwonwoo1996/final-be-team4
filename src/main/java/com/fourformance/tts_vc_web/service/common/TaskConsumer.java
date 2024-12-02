@@ -27,6 +27,7 @@ import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.support.AmqpHeaders;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.util.Map;
@@ -55,10 +56,7 @@ public class TaskConsumer {
             TTSMsgDto ttsMsgDto = objectMapper.readValue(message, TTSMsgDto.class);
 
             // 상태 업데이트
-            Task task = taskRepository.findByNameInJson(ttsMsgDto.getTtsDetail().getId());
-            TaskHistory latestHistory = historyRepository.findLatestTaskHistoryByTaskId(task.getId());
-            TaskHistory taskHistory   = TaskHistory.createTaskHistory(task, latestHistory.getNewStatus(), TaskStatusConst.RUNNABLE, "작업 시작");
-            //TaskHistoryRepository.save(taskHistory)
+            updateStatus(ttsMsgDto.getTtsDetail().getId(), TaskStatusConst.RUNNABLE, "작업 시작");
 
 
             // TTS 작업
@@ -87,9 +85,7 @@ public class TaskConsumer {
             // 메시지 처리 완료 시 1. RabbitMQ에 ACK 전송, 2. SSE로 전달, 3. 상태값 변환(완료)
             channel.basicAck(tag, false);
 
-            Task newTask = taskRepository.findByNameInJson(ttsMsgDto.getTtsDetail().getId());
-            TaskHistory latestHistory2 = historyRepository.findLatestTaskHistoryByTaskId(newTask.getId());
-            TaskHistory newTaskHistory   = TaskHistory.createTaskHistory(task, latestHistory2.getNewStatus(), TaskStatusConst.RUNNABLE, "작업 시작");
+            updateStatus(ttsMsgDto.getTtsDetail().getId(), TaskStatusConst.TERMINATED, "작업 완료");
 
             return responseDetail;
 
@@ -130,11 +126,7 @@ public class TaskConsumer {
             VCMsgDto vcMsgDto = objectMapper.readValue(message, VCMsgDto.class);
 
             // 상태 업데이트
-            Task task = taskRepository.findByNameInJson(vcMsgDto.getDetailId());
-            TaskHistory latestHistory = historyRepository.findLatestTaskHistoryByTaskId(task.getId());
-            TaskHistory taskHistory   = TaskHistory.createTaskHistory(task, latestHistory.getNewStatus(), TaskStatusConst.RUNNABLE, "작업 시작");
-
-
+            updateStatus(vcMsgDto.getVcDetail().getId(), TaskStatusConst.RUNNABLE, "작업 시작");
 
 
         }catch(Exception e){
@@ -159,4 +151,32 @@ public class TaskConsumer {
             System.out.println("TTS 처리 실패"+e);
         }
     }
+
+//    @Transactional
+//    public void updateStatus(Long id, TaskStatusConst newStatusConst, String msg){
+//        Task task = taskRepository.findByNameInJson(id);
+//        TaskHistory latestHistory = historyRepository.findLatestTaskHistoryByTaskId(task.getId());
+//        TaskHistory taskHistory   = TaskHistory.createTaskHistory(task, latestHistory.getNewStatus(), newStatusConst, msg);
+//        historyRepository.save(taskHistory);
+//    }
+
+    @Transactional
+    public void updateStatus(Long id, TaskStatusConst newStatusConst, String msg) {
+        // 1. Task 엔티티 조회
+        Task task = taskRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Task not found for id: " + id));
+
+        // 2. 최신 TaskHistory 조회
+        TaskHistory latestHistory = historyRepository.findLatestTaskHistoryByTaskId(task.getId());
+
+        // 3. 최신 이력이 없는 경우 처리 (최초 TaskHistory 생성)
+        TaskStatusConst oldStatus = latestHistory != null ? latestHistory.getNewStatus() : TaskStatusConst.NEW;
+
+        // 4. 새로운 TaskHistory 생성
+        TaskHistory taskHistory = TaskHistory.createTaskHistory(task, oldStatus, newStatusConst, msg);
+
+        // 5. TaskHistory 저장
+        historyRepository.save(taskHistory);
+    }
+
 }
