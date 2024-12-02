@@ -112,5 +112,7 @@ public interface MemberAudioMetaRepository extends JpaRepository<MemberAudioMeta
     // (테스트용) 모든 concat 멤버오디어메타 찾기 - 의준
     @Query("select m from MemberAudioMeta m where m.audioType = 'CONCAT'")
     List<MemberAudioMeta> findConcatAudioMeta();
-            
+
+    // isDeleted인 memberAudioMeta 찾기 - 의준
+    List<MemberAudioMeta> findByIsDeletedTrue();
 }
