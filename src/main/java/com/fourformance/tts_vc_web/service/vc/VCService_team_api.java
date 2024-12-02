@@ -81,16 +81,24 @@ public class VCService_team_api {
 
         // Step 5: 저장된 타겟(TRG) 오디오 정보 가져오기
         MemberAudioMeta memberAudio = memberAudioMetaRepository.findSelectedAudioByTypeAndMember(AudioType.VC_TRG, memberId);
-        if (memberAudio == null) {
-            throw new BusinessException(ErrorCode.FILE_PROCESSING_ERROR);
+        String voiceId;
+
+        if (memberAudio != null) {
+            LOGGER.info("[타겟 오디오 조회 완료] 오디오 ID: " + memberAudio.getId());
+
+            // Step 6: 타겟 오디오로 Voice ID 생성
+            voiceId = processTargetFiles(VCSaveRequestDto.getTrgFiles(), memberAudio);
+            LOGGER.info("[Voice ID 생성 완료] Voice ID: " + voiceId);
+        } else {
+            if (VCSaveRequestDto.getTrgFiles() == null || VCSaveRequestDto.getTrgFiles().isEmpty()) {
+                throw new BusinessException(ErrorCode.TRG_FILES_EMPTY);
+            }
+
+            voiceId = memberAudioMetaRepository.findtrgVoiceIdById(VCSaveRequestDto.getTrgFiles().get(0).getS3MemberAudioMetaId());
+            if (voiceId == null) {
+                throw new BusinessException(ErrorCode.INVALID_VOICE_ID);
+            }
         }
-        LOGGER.info("[타겟 오디오 조회 완료] 오디오 ID: " + memberAudio.getId());
-
-        // Step 6: 타겟 오디오로 Voice ID 생성
-
-        String voiceId = processTargetFiles(VCSaveRequestDto.getTrgFiles(), memberAudio);
-
-        LOGGER.info("[Voice ID 생성 완료] Voice ID: " + voiceId);
 
         // Step 7: VC 프로젝트에 trg_voice_id 업데이트
         updateProjectTargetVoiceId(projectId, voiceId);
@@ -105,8 +113,42 @@ public class VCService_team_api {
         return vcDetailsRes;
     }
 
+
+
+//    /**
+//     * 타겟 오디오 파일 처리 및 Voice ID 생성 -> 월 한도 돌아오면 사용
+//     */
+//    private String processTargetFiles(List<TrgAudioFileRequestDto> trgFiles, MemberAudioMeta memberAudio) {
+//        if (trgFiles == null || trgFiles.isEmpty()) {
+//            throw new BusinessException(ErrorCode.FILE_PROCESSING_ERROR);
+//        }
+//        try {
+//            // Step 1: Target 파일 URL 확인
+//            if (memberAudio == null || memberAudio.getAudioUrl() == null) {
+//                throw new BusinessException(ErrorCode.FILE_PROCESSING_ERROR);
+//            }
+//            String targetFileUrl = memberAudio.getAudioUrl();
+//            LOGGER.info("[타겟 오디오 업로드 시작] URL: " + targetFileUrl);
+//
+//            // Step 2: Voice ID 생성
+//            String voiceId = elevenLabsClient.uploadVoice(targetFileUrl);
+//            LOGGER.info("[Voice ID 생성 완료] Voice ID: " + voiceId);
+//
+//            // Step 3: Voice ID 저장
+//            memberAudio.update(voiceId);
+//            memberAudioMetaRepository.save(memberAudio);
+//            LOGGER.info("[MemberAudioMeta 업데이트 완료] Voice ID: " + voiceId);
+//
+//            return voiceId;
+//        } catch (IOException e) {
+//            LOGGER.severe("[Voice ID 생성 실패] " + e.getMessage());
+//            throw new BusinessException(ErrorCode.FILE_PROCESSING_ERROR);
+//        }
+//    }
+
     /**
-     * 타겟 오디오 파일 처리 및 Voice ID 생성 -> 월 한도 돌아오면 사용
+     * 타겟 오디오 파일 처리 및 Voice ID 생성 ->  월 한도 제한으로 하드코딩 함
+>>>>>>> team_api
      */
     private String processTargetFiles(List<TrgAudioFileRequestDto> trgFiles, MemberAudioMeta memberAudio) {
         if (trgFiles == null || trgFiles.isEmpty()) {
@@ -213,8 +255,13 @@ public class VCService_team_api {
             MultipartFile originFile,
             String voiceId,
             Long memberId) {
+
+
         String convertedFilePath = null;
         File convertedFile = null;
+
+
+
         try {
             // Step 1: 소스 파일 URL 가져오기
             String sourceFileUrl = memberAudioMetaRepository.findAudioUrlsByAudioMetaIds(
@@ -227,6 +274,8 @@ public class VCService_team_api {
             convertedFilePath = elevenLabsClient.convertSpeechToSpeech(voiceId, sourceFileUrl);
             LOGGER.info("[파일 변환 완료] 파일 경로: " + convertedFilePath);
 
+
+
             // Step 3: 변환된 파일 읽기 및 S3 저장
             convertedFile = new File(convertedFilePath);
             byte[] convertedFileBytes = Files.readAllBytes(convertedFile.toPath());
@@ -236,6 +285,8 @@ public class VCService_team_api {
             LOGGER.info("[S3 업로드 완료] URL: " + vcOutputUrl);
 
             // Step 4: 결과 DTO 생성 및 반환
+
+
             return new VCDetailResDto(
                     srcFile.getId(),
                     srcFile.getProjectId(),
@@ -249,12 +300,16 @@ public class VCService_team_api {
             e.printStackTrace();
             throw new BusinessException(ErrorCode.SERVER_ERROR);
         } finally {
+
+
             // 변환 파일 삭제 로직을 finally 블록에 추가하여 항상 실행되도록 함
             if (convertedFile != null && convertedFile.exists()) {
                 if (!convertedFile.delete()) {
                     LOGGER.warning("변환 파일 삭제 실패: " + convertedFile.getAbsolutePath());
                 } else {
                     LOGGER.info("변환 파일 삭제 성공: " + convertedFilePath);
+
+
                 }
             }
         }
