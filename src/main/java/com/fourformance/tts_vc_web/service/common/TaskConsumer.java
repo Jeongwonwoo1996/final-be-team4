@@ -60,7 +60,6 @@ public class TaskConsumer {
         Long projectId = -1L;
         Long detailId = -1L;
 
-        System.out.println("TTS audio task : " + message);
         try {
             // meassage(String) -> TTSMsgDto 로 역직렬화
             TTSMsgDto ttsMsgDto = objectMapper.readValue(message, TTSMsgDto.class);
@@ -71,7 +70,6 @@ public class TaskConsumer {
             // 상태 업데이트
             updateStatus(detailId, TaskStatusConst.RUNNABLE, "작업 시작");
             sseService.sendToClient(projectId, "TTS 작업이 시작되었습니다.");
-//            sseController.sendStatusUpdate(ttsMsgDto.getProjectId(), null);
 
             // TTS 작업
             TTSProject ttsProject = ttsProjectRepository.findById(projectId)
@@ -100,33 +98,25 @@ public class TaskConsumer {
             channel.basicAck(tag, false);
             updateStatus(detailId, TaskStatusConst.COMPLETED, "작업 완료");
             sseService.sendToClient(projectId, response);
-//            sseController.sendStatusUpdate(projectId, response);
-            System.out.println("Sending SSE update for clientId: " + ttsMsgDto.getProjectId());
 
 
-        } catch (JsonProcessingException JsonError) { // 상태값 변환(실패)
-            // JSON 파싱 에러 처리
+        } catch (JsonProcessingException JsonError) { // JSON 파싱 에러 처리
 
             updateStatus(detailId, TaskStatusConst.FAILED, "작업 실패");
             sseService.sendToClient(projectId, null);
 
-//            sseController.sendStatusUpdate(projectId, null);
-
             throw new BusinessException(ErrorCode.JSON_PROCESSING_ERROR);
 
-        } catch (Exception e) { // 상태값 변환(실패)
+        } catch (Exception e) {
 
-            try {
-                // Dead Letter로 메시지 전달
-                channel.basicNack(tag, false, false); // 메시지를 다시 처리하지 않고 DLQ로 이동
-                updateStatus(detailId, TaskStatusConst.COMPLETED, "작업 실패");
+            try { // Dead Letter Queue로 메시지 전달
+                channel.basicNack(tag, false, false);
+                updateStatus(detailId, TaskStatusConst.FAILED, "작업 실패");
                 sseService.sendToClient(projectId, null);
-//                sseController.sendStatusUpdate(projectId, null);
             }
             catch (IOException ioException) {
-                updateStatus(detailId, TaskStatusConst.COMPLETED, "작업 실패");
+                updateStatus(detailId, TaskStatusConst.FAILED, "작업 실패");
                 sseService.sendToClient(projectId, null);
-//                sseController.sendStatusUpdate(projectId, null);
             }
 
         }
