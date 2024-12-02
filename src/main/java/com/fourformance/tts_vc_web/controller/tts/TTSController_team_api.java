@@ -50,15 +50,16 @@ public class TTSController_team_api {
             @RequestBody TTSRequestDto ttsRequestDto,
             HttpSession session) {
 
-        session.setAttribute("memberId",1L);
+//        session.setAttribute("memberId",1L);
+        Long memberId = (Long) session.getAttribute("memberId");
 
         // 세션에 memberId 값이 설정되지 않았다면 예외 처리
-        if (session.getAttribute("memberId") == null) {
+        if (memberId == null) {
             throw new BusinessException(ErrorCode.SESSION_MEMBER_ID_NOT_SET);
         }
 
         // 임시 하드 코딩. 세션에 memberId 값 설정
-        Long memberId = (Long) session.getAttribute("memberId");
+//        Long memberId = (Long) session.getAttribute("memberId");
 
         ttsServiceTaskJob.enqueueTTSBatchTasks(ttsRequestDto, memberId);
 
