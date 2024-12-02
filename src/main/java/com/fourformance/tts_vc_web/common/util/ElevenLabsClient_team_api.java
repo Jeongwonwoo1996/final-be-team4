@@ -35,41 +35,21 @@ public class ElevenLabsClient_team_api {
      * @throws IOException 파일 처리 중 오류
      */
     public String uploadVoice(String targetAudioPath) throws IOException {
-        MultipartBody.Builder builder = new MultipartBody.Builder()
+        RequestBody audioRequestBody = createAudioRequestBody(targetAudioPath);
+        String fileName = extractFileName(targetAudioPath);
+
+        MultipartBody requestBody = new MultipartBody.Builder()
                 .setType(MultipartBody.FORM)
                 .addFormDataPart("name", "user_custom_voice")
-                .addFormDataPart("remove_background_noise", "false");
-
-        RequestBody audioRequestBody;
-        String fileName;
-
-        if (targetAudioPath.startsWith("http:/") || targetAudioPath.startsWith("https:/")) {
-            // S3 URL에서 파일 다운로드
-            URL url = new URL(targetAudioPath);
-            try (InputStream inputStream = url.openStream()) {
-                byte[] audioBytes = inputStream.readAllBytes();
-                fileName = Paths.get(url.getPath()).getFileName().toString();
-                audioRequestBody = RequestBody.create(audioBytes, MediaType.parse("audio/mpeg"));
-            }
-        } else {
-            throw new IllegalArgumentException("지원하지 않는 파일 경로입니다: " + targetAudioPath);
-        }
-
-        builder.addFormDataPart("files", fileName, audioRequestBody);
-
-        Request request = new Request.Builder()
-                .url(baseUrl + "/voices/add")
-                .addHeader("xi-api-key", apiKey)
-                .post(builder.build())
+                .addFormDataPart("remove_background_noise", "false")
+                .addFormDataPart("files", fileName, audioRequestBody)
                 .build();
 
-        try (Response response = client.newCall(request).execute()) {
-            if (!response.isSuccessful()) {
-                throw new IOException("Voice ID 생성 실패: " + response.body().string());
-            }
+        Request request = createRequest("/voices/add", requestBody);
 
-            String responseBody = response.body().string();
-            return extractVoiceId(responseBody);
+        try (Response response = client.newCall(request).execute()) {
+            validateResponse(response);
+            return extractVoiceId(response.body().string());
         }
     }
 
@@ -82,33 +62,19 @@ public class ElevenLabsClient_team_api {
      * @throws IOException 변환 중 오류
      */
     public String convertSpeechToSpeech(String voiceId, String audioFilePath) throws IOException {
-        MultipartBody.Builder builder = new MultipartBody.Builder()
+        RequestBody audioRequestBody = createAudioRequestBody(audioFilePath);
+
+        MultipartBody requestBody = new MultipartBody.Builder()
                 .setType(MultipartBody.FORM)
                 .addFormDataPart("model_id", "eleven_english_sts_v2")
-                .addFormDataPart("remove_background_noise", "false");
-
-        if (audioFilePath.startsWith("http:/") || audioFilePath.startsWith("https:/")) {
-            // S3 URL에서 파일 다운로드 및 폼 데이터 추가
-            URL url = new URL(audioFilePath);
-            try (InputStream inputStream = url.openStream()) {
-                byte[] audioBytes = inputStream.readAllBytes();
-                builder.addFormDataPart("audio", "source.mp3",
-                        RequestBody.create(audioBytes, MediaType.parse("audio/mpeg")));
-            }
-        } else {
-            throw new IllegalArgumentException("지원하지 않는 파일 경로입니다: " + audioFilePath);
-        }
-
-        Request request = new Request.Builder()
-                .url(baseUrl + "/speech-to-speech/" + voiceId)
-                .addHeader("xi-api-key", apiKey)
-                .post(builder.build())
+                .addFormDataPart("remove_background_noise", "false")
+                .addFormDataPart("audio", "source.mp3", audioRequestBody)
                 .build();
 
+        Request request = createRequest("/speech-to-speech/" + voiceId, requestBody);
+
         try (Response response = client.newCall(request).execute()) {
-            if (!response.isSuccessful()) {
-                throw new IOException("변환 실패: " + response.body().string());
-            }
+            validateResponse(response);
 
             // 변환된 파일 저장 경로 결정
             File tempFile = File.createTempFile("vc_audio_", ".mp3");
@@ -117,8 +83,62 @@ public class ElevenLabsClient_team_api {
             }
 
             LOGGER.info("[파일 변환 완료] 파일 경로: " + tempFile.getAbsolutePath());
-
             return tempFile.getAbsolutePath();
+        }
+    }
+
+    /**
+     * 요청 본문 생성에 사용될 오디오 RequestBody 생성.
+     *
+     * @param audioPath 오디오 파일 경로
+     * @return 생성된 RequestBody
+     * @throws IOException 파일 처리 중 오류
+     */
+    private RequestBody createAudioRequestBody(String audioPath) throws IOException {
+        if (audioPath.startsWith("http:/") || audioPath.startsWith("https:/")) {
+            URL url = new URL(audioPath);
+            try (InputStream inputStream = url.openStream()) {
+                return RequestBody.create(inputStream.readAllBytes(), MediaType.parse("audio/mpeg"));
+            }
+        } else {
+            throw new IllegalArgumentException("지원하지 않는 파일 경로입니다: " + audioPath);
+        }
+    }
+
+    /**
+     * 파일 경로에서 파일 이름 추출.
+     *
+     * @param filePath 파일 경로
+     * @return 파일 이름
+     */
+    private String extractFileName(String filePath) {
+        return Paths.get(filePath).getFileName().toString();
+    }
+
+    /**
+     * 요청 생성 메서드.
+     *
+     * @param endpoint   API 엔드포인트
+     * @param requestBody 요청 본문
+     * @return 생성된 Request
+     */
+    private Request createRequest(String endpoint, RequestBody requestBody) {
+        return new Request.Builder()
+                .url(baseUrl + endpoint)
+                .addHeader("xi-api-key", apiKey)
+                .post(requestBody)
+                .build();
+    }
+
+    /**
+     * 응답 검증 메서드.
+     *
+     * @param response HTTP 응답
+     * @throws IOException 응답이 성공적이지 않을 경우 예외 발생
+     */
+    private void validateResponse(Response response) throws IOException {
+        if (!response.isSuccessful()) {
+            throw new IOException("API 요청 실패: " + response.body().string());
         }
     }
 
@@ -134,4 +154,5 @@ public class ElevenLabsClient_team_api {
         int endIndex = responseBody.indexOf("\"", startIndex);
         return responseBody.substring(startIndex, endIndex);
     }
+
 }
