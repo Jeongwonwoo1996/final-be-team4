@@ -219,15 +219,10 @@ public class TTSService_TaskJob {
         LOGGER.info("callTTSApi 호출: " + ttsMsgDto);
 
         // TTS 디테일과 음성 스타일 데이터 조회
-        TTSDetail ttsDetail = ttsDetailRepository.findById(ttsProject.getMember().getId()).orElseThrow();
+        TTSDetail ttsDetail = ttsDetailRepository.findById(ttsMsgDto.getDetailId()).orElseThrow();
         String languageCode = voiceStyleRepository.findById(ttsMsgDto.getUnitVoiceStyleId()).get().getLanguageCode();
         String gender = voiceStyleRepository.findById(ttsMsgDto.getUnitVoiceStyleId()).get().getGender();
         String script = ttsMsgDto.getUnitScript();
-
-
-        System.out.println("gender = " + gender);
-        System.out.println("languageCode = " + languageCode);
-        System.out.println("script = " + script);
 
         // 텍스트와 언어 코드 검증
         checkTextLanguage(script, languageCode);
@@ -242,7 +237,6 @@ public class TTSService_TaskJob {
                 ttsMsgDto.getUnitVolume(),
                 ttsMsgDto.getUnitPitch()
         );
-
 
         // APIStatus 엔티티 생성 및 저장
         APIStatus apiStatus = APIStatus.createAPIStatus(null, ttsDetail, requestPayload);
