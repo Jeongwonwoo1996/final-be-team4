@@ -169,9 +169,11 @@ public class TaskConsumer {
 
     @Transactional
     public void updateStatus(Long id, TaskStatusConst newStatusConst, String msg) {
-        // 1. Task 엔티티 조회
+        // 1. Task 엔티티 조회 및 상태 update
         Task task = taskRepository.findByNameInJson(id)
                 .orElseThrow(() ->  new BusinessException(ErrorCode.TASK_NOT_FOUND));
+        task.updateStatus(newStatusConst);
+        taskRepository.save(task);
 
         // 2. 최신 TaskHistory 조회
         TaskHistory latestHistory = historyRepository.findLatestTaskHistoryByTaskId(task.getId());
