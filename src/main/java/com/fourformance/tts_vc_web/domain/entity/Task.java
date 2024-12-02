@@ -15,6 +15,7 @@ import java.time.LocalDateTime;
 @ToString
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Table(name = "task")
 public class Task extends BaseEntity {
 
     @Id

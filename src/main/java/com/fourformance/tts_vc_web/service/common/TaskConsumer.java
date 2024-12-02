@@ -17,12 +17,10 @@ import com.fourformance.tts_vc_web.dto.common.VCMsgDto;
 import com.fourformance.tts_vc_web.dto.response.DataResponseDto;
 import com.fourformance.tts_vc_web.dto.response.ResponseDto;
 import com.fourformance.tts_vc_web.dto.tts.TTSResponseDetailDto;
-import com.fourformance.tts_vc_web.dto.tts.TTSResponseDto;
 import com.fourformance.tts_vc_web.repository.TTSProjectRepository;
 import com.fourformance.tts_vc_web.repository.TaskHistoryRepository;
 import com.fourformance.tts_vc_web.repository.TaskRepository;
 import com.fourformance.tts_vc_web.service.tts.TTSService_TaskJob;
-import com.fourformance.tts_vc_web.service.tts.TTSService_team_api;
 import lombok.RequiredArgsConstructor;
 import com.rabbitmq.client.Channel;
 
@@ -33,9 +31,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 
 @Component
 @RequiredArgsConstructor
@@ -47,6 +43,7 @@ public class TaskConsumer {
     private final TTSService_TaskJob ttsService;
     private final TTSProjectRepository ttsProjectRepository;
     private final SSEController sseController;
+    private final SseEmitterService sseService;
 
 
     /**
@@ -70,7 +67,7 @@ public class TaskConsumer {
 
             // 상태 업데이트
             updateStatus(taskId, TaskStatusConst.RUNNABLE, "작업 시작");
-            sseController.sendStatusUpdate(ttsMsgDto.getProjectId(), null);
+            sseService.sendToClient(projectId, "TTS 작업이 시작되었습니다.");
 
             // TTS 작업
             TTSProject ttsProject = ttsProjectRepository.findById(projectId)
@@ -97,14 +94,14 @@ public class TaskConsumer {
 
             // 메시지 처리 완료 시 (1. RabbitMQ에 ACK 전송, 2. SSE로 전달, 3. 상태값 변환(완료))
             channel.basicAck(tag, false);
-            updateStatus(taskId, TaskStatusConst.COMPLETED, "작업 완료");
-            sseController.sendStatusUpdate(projectId, response);
 
+            updateStatus(taskId, TaskStatusConst.COMPLETED, "작업 완료");
+            sseService.sendToClient(projectId, response);
 
         } catch (JsonProcessingException JsonError) { // JSON 파싱 에러 처리
 
             updateStatus(taskId, TaskStatusConst.FAILED, "작업 실패");
-            sseController.sendStatusUpdate(projectId, null);
+            sseService.sendToClient(projectId, null);
 
             throw new BusinessException(ErrorCode.JSON_PROCESSING_ERROR);
 
@@ -113,13 +110,11 @@ public class TaskConsumer {
             try { // Dead Letter Queue로 메시지 전달
                 channel.basicNack(tag, false, false);
                 updateStatus(taskId, TaskStatusConst.FAILED, "작업 실패");
-                sseController.sendStatusUpdate(projectId, null);
             }
             catch (IOException ioException) {
                 updateStatus(taskId, TaskStatusConst.FAILED, "작업 실패");
-                sseController.sendStatusUpdate(projectId, null);
+                sseService.sendToClient(projectId, null);
             }
-
         }
     }
 
@@ -133,48 +128,19 @@ public class TaskConsumer {
 
         System.out.println("VC audio task : " + message);
 
-        Long projectId = -1L;
-        Long detailId = -1L;
-
         // 처리 로직 구현
         try{
             // meassage(String) -> TTSMsgDto 로 역직렬화
             VCMsgDto vcMsgDto = objectMapper.readValue(message, VCMsgDto.class);
 
             // 상태 업데이트
-            updateStatus(vcMsgDto.getDetailId(), TaskStatusConst.RUNNABLE, "작업 시작");
-
-            // VC 작업
+  //          updateStatus(vcMsgDto.getVcDetail().getId(), TaskStatusConst.RUNNABLE, "작업 시작");
 
 
-            ResponseDto response =  DataResponseDto.of("");
 
-
-            // 메시지 처리 완료 시 (1. RabbitMQ에 ACK 전송, 2. SSE로 전달, 3. 상태값 변환(완료))
-            channel.basicAck(tag, false);
-            updateStatus(detailId, TaskStatusConst.COMPLETED, "작업 완료");
-            sseController.sendStatusUpdate(projectId, response);
-
-
-        } catch (JsonProcessingException JsonError) { // JSON 파싱 에러 처리
-
-            updateStatus(detailId, TaskStatusConst.FAILED, "작업 실패");
-            sseController.sendStatusUpdate(projectId, null);
-
-            throw new BusinessException(ErrorCode.JSON_PROCESSING_ERROR);
-
-        } catch (Exception e) {
-
-            try { // Dead Letter Queue로 메시지 전달
-                channel.basicNack(tag, false, false);
-                updateStatus(detailId, TaskStatusConst.FAILED, "작업 실패");
-                sseController.sendStatusUpdate(projectId, null);
-            }
-            catch (IOException ioException) {
-                updateStatus(detailId, TaskStatusConst.FAILED, "작업 실패");
-                sseController.sendStatusUpdate(projectId, null);
-            }
-
+        }catch(Exception e){
+            // 실패 상태로 업데이트
+            System.out.println("TTS 처리 실패"+e);
         }
     }
 
