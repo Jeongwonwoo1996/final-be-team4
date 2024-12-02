@@ -57,7 +57,8 @@ public class TaskConsumer {
     public void handleTTSTask(String message, Channel channel, @Header(AmqpHeaders.DELIVERY_TAG) long tag) {
 
         Long projectId = -1L;
-        Long detailId = -1L;
+        Long detailId  = -1L;
+        Long taskId    = -1L;
 
         try {
             // meassage(String) -> TTSMsgDto 로 역직렬화
@@ -65,9 +66,10 @@ public class TaskConsumer {
             projectId = ttsMsgDto.getProjectId();
             detailId  = ttsMsgDto.getDetailId();
 
+            taskId = taskRepository.findByNameInJson(detailId);
 
             // 상태 업데이트
-            updateStatus(detailId, TaskStatusConst.RUNNABLE, "작업 시작");
+            updateStatus(taskId, TaskStatusConst.RUNNABLE, "작업 시작");
             sseController.sendStatusUpdate(ttsMsgDto.getProjectId(), null);
 
             // TTS 작업
@@ -95,13 +97,13 @@ public class TaskConsumer {
 
             // 메시지 처리 완료 시 (1. RabbitMQ에 ACK 전송, 2. SSE로 전달, 3. 상태값 변환(완료))
             channel.basicAck(tag, false);
-            updateStatus(detailId, TaskStatusConst.COMPLETED, "작업 완료");
+            updateStatus(taskId, TaskStatusConst.COMPLETED, "작업 완료");
             sseController.sendStatusUpdate(projectId, response);
 
 
         } catch (JsonProcessingException JsonError) { // JSON 파싱 에러 처리
 
-            updateStatus(detailId, TaskStatusConst.FAILED, "작업 실패");
+            updateStatus(taskId, TaskStatusConst.FAILED, "작업 실패");
             sseController.sendStatusUpdate(projectId, null);
 
             throw new BusinessException(ErrorCode.JSON_PROCESSING_ERROR);
@@ -110,11 +112,11 @@ public class TaskConsumer {
 
             try { // Dead Letter Queue로 메시지 전달
                 channel.basicNack(tag, false, false);
-                updateStatus(detailId, TaskStatusConst.FAILED, "작업 실패");
+                updateStatus(taskId, TaskStatusConst.FAILED, "작업 실패");
                 sseController.sendStatusUpdate(projectId, null);
             }
             catch (IOException ioException) {
-                updateStatus(detailId, TaskStatusConst.FAILED, "작업 실패");
+                updateStatus(taskId, TaskStatusConst.FAILED, "작업 실패");
                 sseController.sendStatusUpdate(projectId, null);
             }
 
@@ -193,13 +195,14 @@ public class TaskConsumer {
         }
     }
 
+
     @Transactional
-    public void updateStatus(Long id, TaskStatusConst newStatusConst, String msg) {
+    public void updateStatus(Long taskId, TaskStatusConst newStatusConst, String msg) {
         // 1. Task 엔티티 조회 및 상태 update
-        Task task = taskRepository.findByNameInJson(id)
-                .orElseThrow(() ->  new BusinessException(ErrorCode.TASK_NOT_FOUND));
-        task.updateStatus(newStatusConst);
-        taskRepository.save(task);
+        Task task = taskRepository.findById(taskId)
+                 .orElseThrow(() ->  new BusinessException(ErrorCode.TASK_NOT_FOUND));
+             task.updateStatus(newStatusConst);
+         taskRepository.save(task);
 
         // 2. 최신 TaskHistory 조회
         TaskHistory latestHistory = historyRepository.findLatestTaskHistoryByTaskId(task.getId());

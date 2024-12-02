@@ -12,6 +12,6 @@ import java.util.Optional;
 public interface TaskRepository extends JpaRepository<Task, Long> {
 
     // 작업 데이터(Json)으로 데이터 찾기 - 승민
-    @Query(value = "SELECT * FROM Task t WHERE JSON_EXTRACT(task_data, '$.id') = :id", nativeQuery = true)
-    Optional<Task> findByNameInJson(@Param("id") Long id);
+    @Query(value = "SELECT t.id FROM Task t WHERE JSON_EXTRACT(task_data, '$.id') = :id", nativeQuery = true)
+    Long findByNameInJson(@Param("id") Long id);
 }
