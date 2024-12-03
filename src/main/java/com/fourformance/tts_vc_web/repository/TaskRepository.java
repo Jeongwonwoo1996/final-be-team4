@@ -17,20 +17,14 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
     Long findByNameInJson(@Param("id") Long id);
 
     @Query(value = """
-    SELECT t.*
-    FROM Task t
-    JOIN Project p ON t.project_id = p.id
-    WHERE p.member_id = :memberId
-      AND (
-          EXISTS (
-              SELECT 1
-              FROM Task t2
-              WHERE t2.project_id = p.id
-                AND t2.status IN ('PENDING', 'IN_PROGRESS', 'FAILED')
-          )
-          OR
-          (t.status = 'COMPLETED' AND t.status_change_time >= NOW() - INTERVAL 1 DAY)
-      )
+    SELECT DISTINCT t.*
+       FROM task t
+       JOIN project p ON t.project_id = p.project_id
+       WHERE p.member_id = 1
+         AND (
+             t.task_status_const IN ('WAITING', 'RUNNABLE', 'FAILED')
+             OR (t.task_status_const = 'COMPLETED' AND t.last_modified_date >= NOW() - INTERVAL 1 DAY)
+         );
 """, nativeQuery = true)
     List<Task> findTasksByMemberIdAndConditions(@Param("memberId") Long memberId);
 

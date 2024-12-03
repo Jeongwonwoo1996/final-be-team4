@@ -5,15 +5,15 @@ import com.fourformance.tts_vc_web.common.constant.TaskStatusConst;
 import com.fourformance.tts_vc_web.domain.entity.TTSProject;
 import com.fourformance.tts_vc_web.domain.entity.Task;
 import com.fourformance.tts_vc_web.dto.tts.TTSProjectDto;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
+import lombok.*;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.config.Configuration;
 
 @Data
 @Builder
 @AllArgsConstructor
+@NoArgsConstructor
+@RequiredArgsConstructor
 public class TaskLoadDto {
     private Long id;
     private Long projectId;
