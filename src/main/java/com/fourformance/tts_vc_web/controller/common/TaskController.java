@@ -25,14 +25,9 @@ public class TaskController {
             description = "Save 버튼을 이용하여 백업해놓은 작업을 불러와서 실행합니다." )
     @GetMapping("/load")
     public ResponseDto load(){
-        return DataResponseDto.of("");
-    }
 
-    @Operation(
-            summary = "전체 작업 실행하기",
-            description = "Success 상태인 작업을 제외하고, 작업 대기를 걸어놓은 모든 작업들이 실행됩니다" )
-    @PostMapping("/process")
-    public ResponseDto processs(){
+        // 작업 로드
+
         return DataResponseDto.of("");
     }
 
@@ -45,10 +40,10 @@ public class TaskController {
     }
 
     @Operation(
-            summary = "작업 저장",
-            description = "지금까지 걸어놓은 모든 작업을 백업합니다." )
-    @PostMapping("/save")
-    public ResponseDto save(){
+            summary = "실패 작업 재실행 버튼",
+            description = "실패한 작업을 재실행합니다." )
+    @PostMapping("/restart")
+    public ResponseDto restart(){
         return DataResponseDto.of("");
     }
 
