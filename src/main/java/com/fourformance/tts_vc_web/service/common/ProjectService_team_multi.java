@@ -79,8 +79,7 @@ public class ProjectService_team_multi {
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_EXISTS_PROJECT));
 
-        if(project==null || project.getId()==null) {throw new BusinessException(ErrorCode.NOT_EXISTS_PROJECT);}
-
+        if(project==null || project.getId()==null){throw new BusinessException(ErrorCode.NOT_EXISTS_PROJECT);}
 
         // TTSDetail ID 리스트를 사용하여 TTSDetail 엔티티를 조회
         List<TTSDetail> ttsDetails = ttsDetailRepository.findByTtsDetailIds(ttsDetailIdList);
@@ -91,7 +90,7 @@ public class ProjectService_team_multi {
                 .toList();
 
         if(ttsDetailIdList.size() != ttsDetailIds.size()) {
-            throw new BusinessException(ErrorCode.INVALID_PROJECT_ID);
+            throw new BusinessException(ErrorCode.NOT_EXISTS_PROJECT_DETAIL);
         }
 
         try {
