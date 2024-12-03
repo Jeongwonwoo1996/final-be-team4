@@ -1,19 +1,22 @@
 package com.fourformance.tts_vc_web.service.concat;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fourformance.tts_vc_web.common.constant.AudioType;
 import com.fourformance.tts_vc_web.common.constant.ConcatStatusConst;
+import com.fourformance.tts_vc_web.common.constant.ProjectType;
 import com.fourformance.tts_vc_web.common.exception.common.BusinessException;
 import com.fourformance.tts_vc_web.common.exception.common.ErrorCode;
 import com.fourformance.tts_vc_web.domain.entity.*;
-import com.fourformance.tts_vc_web.dto.concat.ConcatRequestDetailDto;
-import com.fourformance.tts_vc_web.dto.concat.ConcatRequestDto;
-import com.fourformance.tts_vc_web.dto.concat.ConcatResponseDetailDto;
-import com.fourformance.tts_vc_web.dto.concat.ConcatResponseDto;
-import com.fourformance.tts_vc_web.repository.ConcatDetailRepository;
-import com.fourformance.tts_vc_web.repository.ConcatProjectRepository;
-import com.fourformance.tts_vc_web.repository.ConcatStatusHistoryRepository;
-import com.fourformance.tts_vc_web.repository.MemberRepository;
+import com.fourformance.tts_vc_web.dto.common.ConcatMsgDto;
+import com.fourformance.tts_vc_web.dto.common.VCMsgDto;
+import com.fourformance.tts_vc_web.dto.concat.*;
+import com.fourformance.tts_vc_web.dto.response.DataResponseDto;
+import com.fourformance.tts_vc_web.dto.vc.VCDetailDto;
+import com.fourformance.tts_vc_web.repository.*;
 import com.fourformance.tts_vc_web.service.common.S3Service;
+import com.fourformance.tts_vc_web.service.common.TaskProducer;
+import com.fourformance.tts_vc_web.service.vc.VCService_team_multi;
 import lombok.RequiredArgsConstructor;
 import net.bramp.ffmpeg.FFmpeg;
 import net.bramp.ffmpeg.FFprobe;
@@ -21,10 +24,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.PostConstruct;
 import java.io.File;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.util.*;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -42,6 +47,11 @@ public class ConcatService_TaskJob {
     private final ConcatDetailRepository concatDetailRepository; // 디테일 관련 저장소
     private final MemberRepository memberRepository; // 멤버 관련 저장소
     private final Environment environment; // Environment 주입
+    private final VCService_team_multi vcService;
+    private final ConcatService_team_api concatService;
+    private final TaskRepository taskRepository;
+    private final ObjectMapper objectMapper;
+    private final TaskProducer taskProducer;
 
     private static final Logger LOGGER = Logger.getLogger(ConcatService_TaskJob.class.getName());
 
@@ -80,6 +90,89 @@ public class ConcatService_TaskJob {
         // FFmpeg 인스턴스 초기화 (예시)
         setupFFmpeg();
     }
+
+    @Transactional
+    public void enqueueConcatTask(ConcatRequestDto concatReqDto, List<MultipartFile> files, Long memberId){
+
+        // 1. 유효성 검증: 요청 데이터 및 상세 데이터 확인
+        if (concatReqDto == null ||
+                concatReqDto.getConcatRequestDetails() == null ||
+                concatReqDto.getConcatRequestDetails().isEmpty()) {
+            throw new BusinessException(ErrorCode.INVALID_REQUEST_DATA); // 커스텀 예외 발생
+        }
+
+        // 2. 파일 수와 요청 DTO의 상세 정보 수가 동일한지 확인
+        List<ConcatRequestDetailDto> details = concatReqDto.getConcatRequestDetails();
+        if (details.size() != files.size()) {
+            throw new BusinessException(ErrorCode.INVALID_REQUEST_DATA);
+        }
+
+        // 3. 요청 DTO의 각 상세 항목에 업로드된 파일 매핑
+        for (int i = 0; i < details.size(); i++) {
+            ConcatRequestDetailDto detail = details.get(i);
+            MultipartFile file = vcService.findMultipartFileByName(files, detail.getLocalFileName());
+
+            detail.setSourceAudio(file);
+        }
+
+        // 프로젝트 저장
+        ConcatProject concatProject = saveOrUpdateProject(concatReqDto, memberId);
+
+        // 디테일 저장
+        for (ConcatRequestDetailDto detail : details) {
+            MemberAudioMeta memberAudioMeta = uploadConcatDetailSourceAudio(detail, concatProject);
+            saveOrUpdateDetail(detail, concatProject,memberAudioMeta);
+        }
+
+        // 프로젝트 ID로 연관된 concat 디테일 조회
+        List<ConcatDetail> concatDetails = concatDetailRepository.findByConcatProject_Id(concatProject.getId());
+
+        // 6. ConcatProject와 ConcatDetail 객체를 ConcatMsgDto로 변환
+        ConcatMsgDto msgDto = createConcatMsgDto(concatProject, concatDetails, memberId);
+        System.out.println("===========================================msgDto.toString() = " + msgDto.toString());
+
+        // 문자열 json으로 변환
+        String taskData = convertToJson(msgDto);
+
+        // Task 생성 및 저장
+        Task task = Task.createTask(concatProject, ProjectType.CONCAT, taskData);
+        taskRepository.save(task);
+
+        // 메시지 생성 및 RabbitMQ에 전송
+        msgDto.setTaskId(task.getId());
+        taskProducer.sendTask("AUDIO_CONCAT", msgDto);
+    }
+
+    private String convertToJson(ConcatMsgDto msgDto) {
+        try {
+            return objectMapper.writeValueAsString(msgDto);
+        } catch (JsonProcessingException e) {
+            throw new BusinessException(ErrorCode.JSON_PROCESSING_ERROR);
+        }
+    }
+
+    public ConcatMsgDto createConcatMsgDto(ConcatProject project, List<ConcatDetail> details, Long memberId) {
+        // ConcatDetail 리스트를 ConcatMsgDetailDto 리스트로 변환
+        List<ConcatMsgDetailDto> detailDtos = details.stream()
+                .map(detail -> ConcatMsgDetailDto.builder()
+                        .detailId(detail.getId()) // ConcatDetail의 ID
+                        .audioSeq(detail.getAudioSeq()) // 오디오 순서
+                        .unitScript(detail.getUnitScript()) // 대본 내용
+                        .endSilence(detail.getEndSilence()) // 종료 후 정적 길이
+                        .srcUrl(detail.getMemberAudioMeta().getAudioUrl()) // 파일 URL
+                        .build())
+                .collect(Collectors.toList());
+
+        // ConcatMsgDto 빌드
+        return ConcatMsgDto.builder()
+                .memberId(memberId) // 회원 ID
+                .taskId(null) // Task ID는 나중에 설정됨
+                .projectId(project.getId()) // 프로젝트 ID
+                .globalFrontSilenceLength(project.getGlobalFrontSilenceLength()) // 글로벌 앞 정적 길이
+                .concatMsgDetailDtos(detailDtos) // 변환된 상세 항목 리스트
+                .build();
+    }
+
 
     /**
      * 테스트 환경인지 확인하는 메서드
