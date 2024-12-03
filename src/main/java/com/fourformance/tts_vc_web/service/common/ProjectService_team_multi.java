@@ -3,14 +3,21 @@ package com.fourformance.tts_vc_web.service.common;
 import com.fourformance.tts_vc_web.common.constant.AudioType;
 import com.fourformance.tts_vc_web.common.exception.common.BusinessException;
 import com.fourformance.tts_vc_web.common.exception.common.ErrorCode;
-import com.fourformance.tts_vc_web.domain.entity.*;
-import com.fourformance.tts_vc_web.dto.tts.TTSDetailDto;
-import com.fourformance.tts_vc_web.repository.*;
+import com.fourformance.tts_vc_web.domain.entity.MemberAudioMeta;
+import com.fourformance.tts_vc_web.domain.entity.OutputAudioMeta;
+import com.fourformance.tts_vc_web.domain.entity.Project;
+import com.fourformance.tts_vc_web.domain.entity.TTSDetail;
+import com.fourformance.tts_vc_web.domain.entity.VCDetail;
+import com.fourformance.tts_vc_web.repository.MemberAudioMetaRepository;
+import com.fourformance.tts_vc_web.repository.MemberAudioVCRepository;
+import com.fourformance.tts_vc_web.repository.OutputAudioMetaRepository;
+import com.fourformance.tts_vc_web.repository.ProjectRepository;
+import com.fourformance.tts_vc_web.repository.TTSDetailRepository;
+import com.fourformance.tts_vc_web.repository.VCDetailRepository;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 @Service
 @Transactional
@@ -25,15 +32,13 @@ public class ProjectService_team_multi {
     private final MemberAudioMetaRepository memberAudioMetaRepository;
 
 
-
     /**
      * TTS 프로젝트 삭제 메서드
-     *
+     * <p>
      * TTS 프로젝트, TTS Detail, 생성된 오디오 데이터들을 삭제합니다. (isDeleted = true)
      *
      * @param projectId : 프로젝트 ID
-     * @throws BusinessException NOT_EXISTS_PROJECT : 프로젝트 ID가 없을 때 발생
-     *                           SERVER_ERROR       : 내부 코드 에러일 때 발생
+     * @throws BusinessException NOT_EXISTS_PROJECT : 프로젝트 ID가 없을 때 발생 SERVER_ERROR       : 내부 코드 에러일 때 발생
      */
     @Transactional
     public void deleteTTSProject(Long projectId) {
@@ -60,7 +65,8 @@ public class ProjectService_team_multi {
                     .toList();
 
             // OutputAudioMeta 삭제 처리
-            List<OutputAudioMeta> outputAudio = outputAudioMetaRepository.findByTtsDetailAndIsDeletedFalse(ttsDetailIds);
+            List<OutputAudioMeta> outputAudio = outputAudioMetaRepository.findByTtsDetailAndIsDeletedFalse(
+                    ttsDetailIds);
             for (OutputAudioMeta audio : outputAudio) {
                 audio.deleteOutputAudioMeta();
                 outputAudioMetaRepository.save(audio);
@@ -74,7 +80,14 @@ public class ProjectService_team_multi {
 
     // TTS 선택된 모든 항목 삭제
     @Transactional
-    public void deleteTTSDetail(List<Long> ttsDetailIdList) {
+    public void deleteTTSDetail(Long projectId, List<Long> ttsDetailIdList) {
+
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_EXISTS_PROJECT));
+
+        if (project == null || project.getId() == null) {
+            throw new BusinessException(ErrorCode.NOT_EXISTS_PROJECT);
+        }
 
         // TTSDetail ID 리스트를 사용하여 TTSDetail 엔티티를 조회
         List<TTSDetail> ttsDetails = ttsDetailRepository.findByTtsDetailIds(ttsDetailIdList);
@@ -84,8 +97,8 @@ public class ProjectService_team_multi {
                 .map(TTSDetail::getId)
                 .toList();
 
-        if(ttsDetailIdList.size() != ttsDetailIds.size()) {
-            throw new BusinessException(ErrorCode.INVALID_PROJECT_ID);
+        if (ttsDetailIdList.size() != ttsDetailIds.size()) {
+            throw new BusinessException(ErrorCode.NOT_EXISTS_PROJECT_DETAIL);
         }
 
         try {
@@ -97,7 +110,8 @@ public class ProjectService_team_multi {
             }
 
             // 2. OutputAudioMeta 삭제 처리
-            List<OutputAudioMeta> outputAudio = outputAudioMetaRepository.findByTtsDetailAndIsDeletedFalse(ttsDetailIds);
+            List<OutputAudioMeta> outputAudio = outputAudioMetaRepository.findByTtsDetailAndIsDeletedFalse(
+                    ttsDetailIds);
             for (OutputAudioMeta audio : outputAudio) {
                 audio.deleteOutputAudioMeta();
                 outputAudioMetaRepository.save(audio);
@@ -128,12 +142,11 @@ public class ProjectService_team_multi {
 
     /**
      * VC 프로젝트 삭제 메서드
-     *
+     * <p>
      * VC 프로젝트, VC Detail, 생성된 오디오, Src 오디오 데이터들을 삭제합니다. (isDeleted = true)
      *
      * @param projectId : 프로젝트 ID
-     * @throws BusinessException NOT_EXISTS_PROJECT : 프로젝트 ID가 없을 때 발생
-     *                           SERVER_ERROR       : 내부 코드 에러일 때 발생
+     * @throws BusinessException NOT_EXISTS_PROJECT : 프로젝트 ID가 없을 때 발생 SERVER_ERROR       : 내부 코드 에러일 때 발생
      */
     @Transactional
     public void deleteVCProject(Long projectId) {
@@ -167,7 +180,8 @@ public class ProjectService_team_multi {
 
             // 4. VC src 오디오 isDeleted 설정
             List<Long> memberAudioIds = vcDetailRepository.findMemberAudioIdsByVcDetailIds(vcDetailIds);
-            List<MemberAudioMeta> memberAudioList = memberAudioMetaRepository.findByMemberAudioIds(memberAudioIds, AudioType.VC_SRC);
+            List<MemberAudioMeta> memberAudioList = memberAudioMetaRepository.findByMemberAudioIds(memberAudioIds,
+                    AudioType.VC_SRC);
 
             for (MemberAudioMeta memberAudioMeta : memberAudioList) {
                 memberAudioMeta.delete(); // isDeleted = true, deletedAt 설정
@@ -192,7 +206,7 @@ public class ProjectService_team_multi {
                 .map(VCDetail::getId)
                 .toList();
 
-        if(vcDetailIdList.size() != vcDetailIds.size()) {
+        if (vcDetailIdList.size() != vcDetailIds.size()) {
             throw new BusinessException(ErrorCode.INVALID_PROJECT_ID);
         }
 
@@ -213,7 +227,8 @@ public class ProjectService_team_multi {
 
             // 3. MemberAudioMeta 에서 AudioType이 VC_SRC 인 것 삭제 처리
             List<Long> memberAudioIds = vcDetailRepository.findMemberAudioIdsByVcDetailIds(vcDetailIds);
-            List<MemberAudioMeta> memberAudioList = memberAudioMetaRepository.findByMemberAudioIds(memberAudioIds, AudioType.VC_SRC);
+            List<MemberAudioMeta> memberAudioList = memberAudioMetaRepository.findByMemberAudioIds(memberAudioIds,
+                    AudioType.VC_SRC);
 
             for (MemberAudioMeta memberAudioMeta : memberAudioList) {
                 memberAudioMeta.delete(); // isDeleted = true, deletedAt 설정
