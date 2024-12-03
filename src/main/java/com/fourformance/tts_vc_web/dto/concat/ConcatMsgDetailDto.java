@@ -2,10 +2,10 @@ package com.fourformance.tts_vc_web.dto.concat;
 
 import lombok.*;
 
-@Getter
-@Setter
+
 @AllArgsConstructor
 @NoArgsConstructor
+@Data
 @Builder
 public class ConcatMsgDetailDto {
 

@@ -29,6 +29,7 @@ import org.springframework.web.multipart.MultipartFile;
 import javax.annotation.PostConstruct;
 import java.io.File;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.util.*;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -128,6 +129,7 @@ public class ConcatService_TaskJob {
 
         // 6. ConcatProject와 ConcatDetail 객체를 ConcatMsgDto로 변환
         ConcatMsgDto msgDto = createConcatMsgDto(concatProject, concatDetails, memberId);
+        System.out.println("===========================================msgDto.toString() = " + msgDto.toString());
 
         // 문자열 json으로 변환
         String taskData = convertToJson(msgDto);
@@ -137,6 +139,7 @@ public class ConcatService_TaskJob {
         taskRepository.save(task);
 
         // 메시지 생성 및 RabbitMQ에 전송
+        msgDto.setTaskId(task.getId());
         taskProducer.sendTask("AUDIO_CONCAT", msgDto);
     }
 
