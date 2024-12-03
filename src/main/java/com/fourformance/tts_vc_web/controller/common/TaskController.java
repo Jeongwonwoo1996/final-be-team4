@@ -1,9 +1,12 @@
 package com.fourformance.tts_vc_web.controller.common;
 
+import com.fourformance.tts_vc_web.common.exception.common.BusinessException;
+import com.fourformance.tts_vc_web.common.exception.common.ErrorCode;
 import com.fourformance.tts_vc_web.dto.response.DataResponseDto;
 import com.fourformance.tts_vc_web.dto.response.ResponseDto;
 import com.fourformance.tts_vc_web.service.common.TaskProducer;
 import io.swagger.v3.oas.annotations.Operation;
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,9 +27,15 @@ public class TaskController {
             summary = "작업 가져오기",
             description = "Save 버튼을 이용하여 백업해놓은 작업을 불러와서 실행합니다." )
     @GetMapping("/load")
-    public ResponseDto load(){
+    public ResponseDto load(HttpSession session){
 
-        // 작업 로드
+        // memberId 세션에서 가져오기
+        if (session.getAttribute("memberId") == null) {
+            throw new BusinessException(ErrorCode.MEMBER_NOT_FOUND);
+        }
+        Long memberId = (Long) session.getAttribute("memberId");
+
+
 
         return DataResponseDto.of("");
     }
