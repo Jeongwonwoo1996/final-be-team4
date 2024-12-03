@@ -22,6 +22,7 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -48,6 +49,25 @@ public class WorkSpaceController {
 //        Long memberId = (Long) session.getAttribute("memberId");
         Long memberId = 1L; // 임시 하드코딩
 
+        // Service에서 처리된 응답 그대로 반환
+        List<RecentProjectDto> projects = workspaceService.getRecentProjects(memberId);
+        return DataResponseDto.of(projects);
+    }
+
+    @GetMapping("/project-list2")
+    public ResponseDto getRecentProjects2(HttpSession session) {
+
+        Long memberId = (Long) session.getAttribute("memberId");
+//        Long memberId = 1L; // 임시 하드코딩
+
+        // Service에서 처리된 응답 그대로 반환
+        List<RecentProjectDto> projects = workspaceService.getRecentProjects(memberId);
+        return DataResponseDto.of(projects);
+    }
+
+    @GetMapping("/project-list3/{memberId}")
+    public ResponseDto getRecentProjects3(
+            @PathVariable(name = "memberId") Long memberId) {
         // Service에서 처리된 응답 그대로 반환
         List<RecentProjectDto> projects = workspaceService.getRecentProjects(memberId);
         return DataResponseDto.of(projects);
