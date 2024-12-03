@@ -12,7 +12,6 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
-import org.hibernate.validator.constraints.UniqueElements;
 
 @Getter
 @ToString
@@ -26,7 +25,7 @@ public class Member extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @UniqueElements
+    @Column(unique = true)
     private String email;
     private String pwd;
     private String name;
