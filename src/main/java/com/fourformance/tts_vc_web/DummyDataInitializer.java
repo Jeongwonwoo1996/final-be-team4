@@ -66,11 +66,11 @@
 //        // 멤버 생성
 //        List<Member> members = List.of(
 //                Member.createMember("user1@example.com", "password123", "User One", 0,
-//                        LocalDateTime.of(1990, 1, 1, 0, 0), "123-456-7890",true),
+//                        LocalDateTime.of(1990, 1, 1, 0, 0), "123-456-7890", true),
 //                Member.createMember("user2@example.com", "password456", "User Two", 1,
-//                        LocalDateTime.of(1995, 5, 15, 0, 0), "234-567-8901",true),
+//                        LocalDateTime.of(1995, 5, 15, 0, 0), "234-567-8901", true),
 //                Member.createMember("user3@example.com", "password789", "User Three", 0,
-//                        LocalDateTime.of(1985, 3, 20, 0, 0), "345-678-9012",true)
+//                        LocalDateTime.of(1985, 3, 20, 0, 0), "345-678-9012", true)
 //        );
 //        memberRepository.saveAll(members);
 //
