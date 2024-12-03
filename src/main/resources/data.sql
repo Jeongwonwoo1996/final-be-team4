@@ -1,8 +1,8 @@
 # TRUNCATE TABLE voice_style;
 # ALTER TABLE voice_style AUTO_INCREMENT = 1;
 
-DELETE
-FROM voice_style;
+# DELETE
+# FROM voice_style;
 
 # CREATE TABLE voice_style
 # (
