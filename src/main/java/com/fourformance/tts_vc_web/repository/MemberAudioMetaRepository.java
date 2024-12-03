@@ -2,6 +2,7 @@ package com.fourformance.tts_vc_web.repository;
 
 import com.fourformance.tts_vc_web.common.constant.AudioType;
 import com.fourformance.tts_vc_web.domain.entity.MemberAudioMeta;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -30,7 +31,8 @@ public interface MemberAudioMetaRepository extends JpaRepository<MemberAudioMeta
 
     // audioType, memberId와 isSeleted=true 조건으로 memberAudioId 반환 - 승민
     @Query("SELECT m FROM MemberAudioMeta m WHERE m.audioType = :audioType AND m.isSelected = true AND m.member.id = :memberId")
-    MemberAudioMeta findSelectedAudioByTypeAndMember(@Param("audioType") AudioType audioType, @Param("memberId") Long memberId);
+    MemberAudioMeta findSelectedAudioByTypeAndMember(@Param("audioType") AudioType audioType,
+                                                     @Param("memberId") Long memberId);
 
 
     // id 리스트로 특정 오디오 타입 반환 - 승민
@@ -102,4 +104,15 @@ public interface MemberAudioMetaRepository extends JpaRepository<MemberAudioMeta
             "WHERE cd.concatProject.id = :concatProjectId")
     List<Long> findMemberAudioMetaIdsByConcatProjectId(@Param("concatProjectId") Long concatProjectId);
 
+    // 입력받은 타입과 일치하며 createdAt으로부터 한 달이 자난 데이터들 찾기 - 의준
+    @Query("SELECT m FROM MemberAudioMeta m WHERE m.audioType IN (:types) AND m.createdAt <= :threshold AND m.isDeleted = false")
+    List<MemberAudioMeta> findOldVcAudiosToDelete(@Param("types") List<AudioType> types,
+                                                  @Param("threshold") LocalDateTime threshold);
+
+    // (테스트용) 모든 concat 멤버오디어메타 찾기 - 의준
+    @Query("select m from MemberAudioMeta m where m.audioType = 'CONCAT'")
+    List<MemberAudioMeta> findConcatAudioMeta();
+
+    // isDeleted인 memberAudioMeta 찾기 - 의준
+    List<MemberAudioMeta> findByIsDeletedTrue();
 }

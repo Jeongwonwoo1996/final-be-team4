@@ -20,7 +20,7 @@ public class RecentProjectDto {
     private String type;
     private String name;
     private APIStatusConst status;
+    private String script; // 스크립트 추가
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-
 }

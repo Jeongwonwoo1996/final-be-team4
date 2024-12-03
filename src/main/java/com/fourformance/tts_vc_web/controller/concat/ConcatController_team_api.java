@@ -9,6 +9,7 @@ import com.fourformance.tts_vc_web.dto.response.DataResponseDto;
 import com.fourformance.tts_vc_web.dto.response.ResponseDto;
 import com.fourformance.tts_vc_web.service.concat.ConcatService_TaskJob;
 import com.fourformance.tts_vc_web.service.concat.ConcatService_team_api;
+import com.fourformance.tts_vc_web.service.vc.VCService_team_multi;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -35,6 +36,7 @@ public class ConcatController_team_api {
 
     private final ConcatService_team_api concatService; // 병합 서비스 의존성 주입
     private final ConcatService_TaskJob concatTaskService; // 병합 서비스 의존성 주입
+    private final VCService_team_multi vcService;
 
     @PostMapping(
             value = "/convert/batch",
@@ -56,6 +58,8 @@ public class ConcatController_team_api {
             @RequestPart("concatRequestDto") @Parameter(description = "요청 DTO") ConcatRequestDto concatRequestDto,
             @RequestPart("files") @Parameter(description = "업로드할 파일들") List<MultipartFile> files, HttpSession session
     ) {
+        LOGGER.info("컨트롤러 메서드 호출됨: " + concatRequestDto); // 요청 데이터 로깅
+
         // 세션에 memberId 값이 설정되지 않았다면 예외 처리
         if (session.getAttribute("memberId") == null) {
             throw new BusinessException(ErrorCode.SESSION_MEMBER_ID_NOT_SET);
@@ -71,9 +75,7 @@ public class ConcatController_team_api {
                 concatRequestDto.getConcatRequestDetails().isEmpty()) {
             throw new BusinessException(ErrorCode.INVALID_REQUEST_DATA); // 커스텀 예외 발생
         }
-
         concatTaskService.enqueueConcatTask(concatRequestDto,files,memberId);
-
         try {
             // 2. 파일 수와 요청 DTO의 상세 정보 수가 동일한지 확인
             List<ConcatRequestDetailDto> details = concatRequestDto.getConcatRequestDetails();
@@ -82,13 +84,13 @@ public class ConcatController_team_api {
                 throw new BusinessException(ErrorCode.INVALID_REQUEST_DATA);
             }
 
-            /**
-             * 로컬 파일 매칭 메서드 서비스에 추가하기
-             */
             // 3. 요청 DTO의 각 상세 항목에 업로드된 파일 매핑
             for (int i = 0; i < details.size(); i++) {
                 ConcatRequestDetailDto detail = details.get(i);
-                MultipartFile file = files.get(i);
+                MultipartFile file = vcService.findMultipartFileByName(files, detail.getLocalFileName());
+
+                // 예를 들어, 파일명과 detail의 정보가 일치하는지 확인
+                LOGGER.info("매핑 중 - Detail localFileName: " + detail.getLocalFileName() + ", 파일명: " + file.getOriginalFilename());
 
                 detail.setSourceAudio(file);
             }
