@@ -1,11 +1,16 @@
 package com.fourformance.tts_vc_web.service.workspace;
 
+import static com.fourformance.tts_vc_web.domain.entity.QConcatDetail.concatDetail;
+import static com.fourformance.tts_vc_web.domain.entity.QTTSDetail.tTSDetail;
+import static com.fourformance.tts_vc_web.domain.entity.QVCDetail.vCDetail;
+
 import com.fourformance.tts_vc_web.common.constant.APIStatusConst;
 import com.fourformance.tts_vc_web.common.constant.APIUnitStatusConst;
 import com.fourformance.tts_vc_web.common.constant.ProjectType;
 import com.fourformance.tts_vc_web.common.exception.common.BusinessException;
 import com.fourformance.tts_vc_web.common.exception.common.ErrorCode;
 import com.fourformance.tts_vc_web.domain.entity.APIStatus;
+import com.fourformance.tts_vc_web.domain.entity.ConcatProject;
 import com.fourformance.tts_vc_web.domain.entity.OutputAudioMeta;
 import com.fourformance.tts_vc_web.domain.entity.Project;
 import com.fourformance.tts_vc_web.domain.entity.TTSProject;
@@ -18,6 +23,7 @@ import com.fourformance.tts_vc_web.repository.OutputAudioMetaRepository;
 import com.fourformance.tts_vc_web.repository.ProjectRepository;
 import com.fourformance.tts_vc_web.repository.workspace.OutputAudioMetaRepositoryCustomImpl;
 import com.fourformance.tts_vc_web.service.common.S3Service;
+import com.querydsl.jpa.impl.JPAQueryFactory;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -33,6 +39,7 @@ public class WorkspaceService {
     private final OutputAudioMetaRepository outputAudioMetaRepository;
     private final S3Service s3Service;
     private final OutputAudioMetaRepositoryCustomImpl outputAudioMetaRepositoryCustomImpl;
+    private final JPAQueryFactory queryFactory;
 
     public List<RecentProjectDto> getRecentProjects(Long memberId) {
         // memberId가 null이면 예외 발생
@@ -48,12 +55,35 @@ public class WorkspaceService {
             String type = convertProjectType(project); // 프로젝트 타입 결정
 
             APIStatusConst apiStatus = null;
+            String script = null;
 
-            // API 상태를 TTSProject와 VCProject에 따라 가져옴
-            if (project instanceof TTSProject) {
-                apiStatus = ((TTSProject) project).getApiStatus();
-            } else if (project instanceof VCProject) {
-                apiStatus = ((VCProject) project).getApiStatus();
+            // API 상태 및 스크립트를 TTSProject, VCProject, ConcatProject에 따라 가져옴
+            if (project instanceof TTSProject tts) {
+                apiStatus = tts.getApiStatus();
+                script = queryFactory
+                        .select(tTSDetail.unitScript)
+                        .from(tTSDetail)
+                        .where(tTSDetail.ttsProject.id.eq(tts.getId())
+                                .and(tTSDetail.isDeleted.isFalse()))
+                        .orderBy(tTSDetail.unitSequence.asc())
+                        .fetchFirst();
+            } else if (project instanceof VCProject vc) {
+                apiStatus = vc.getApiStatus();
+                script = queryFactory
+                        .select(vCDetail.unitScript)
+                        .from(vCDetail)
+                        .where(vCDetail.vcProject.id.eq(vc.getId())
+                                .and(vCDetail.isDeleted.isFalse()))
+                        .orderBy(vCDetail.createdAt.asc())
+                        .fetchFirst();
+            } else if (project instanceof ConcatProject concat) {
+                script = queryFactory
+                        .select(concatDetail.unitScript)
+                        .from(concatDetail)
+                        .where(concatDetail.concatProject.id.eq(concat.getId())
+                                .and(concatDetail.isDeleted.isFalse()))
+                        .orderBy(concatDetail.audioSeq.asc())
+                        .fetchFirst();
             }
 
             return new RecentProjectDto(
@@ -61,6 +91,7 @@ public class WorkspaceService {
                     type,
                     project.getProjectName(),
                     apiStatus, // 상태는 TTSProject와 VCProject만 포함, 나머지는 null
+                    script, // 스크립트 추가
                     project.getCreatedAt(),
                     project.getUpdatedAt()
             );
