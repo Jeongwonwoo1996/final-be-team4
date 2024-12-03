@@ -14,7 +14,6 @@ import java.util.List;
 public class ConcatRequestDto {
 
     private Long projectId;
-//    private Long memberId;
     private String projectName;
     private Float globalFrontSilenceLength;
     private Float globalTotalSilenceLength;

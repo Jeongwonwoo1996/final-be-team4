@@ -350,7 +350,7 @@ public class VCService_team_multi {
         vcProject.injectTargetAudioMeta(audioMeta);
     }
 
-    private MultipartFile findMultipartFileByName(List<MultipartFile> files, String localFileName) {
+    public MultipartFile findMultipartFileByName(List<MultipartFile> files, String localFileName) {
         return files.stream()
                 .filter(file -> file.getOriginalFilename().equals(localFileName))
                 .findFirst()
