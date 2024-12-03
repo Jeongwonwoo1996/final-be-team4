@@ -74,7 +74,12 @@ public class ProjectService_team_multi {
 
     // TTS 선택된 모든 항목 삭제
     @Transactional
-    public void deleteTTSDetail(List<Long> ttsDetailIdList) {
+    public void deleteTTSDetail(Long projectId, List<Long> ttsDetailIdList) {
+
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_EXISTS_PROJECT));
+
+        if(project==null || project.getId()==null){throw new BusinessException(ErrorCode.NOT_EXISTS_PROJECT);}
 
         // TTSDetail ID 리스트를 사용하여 TTSDetail 엔티티를 조회
         List<TTSDetail> ttsDetails = ttsDetailRepository.findByTtsDetailIds(ttsDetailIdList);
@@ -85,7 +90,7 @@ public class ProjectService_team_multi {
                 .toList();
 
         if(ttsDetailIdList.size() != ttsDetailIds.size()) {
-            throw new BusinessException(ErrorCode.INVALID_PROJECT_ID);
+            throw new BusinessException(ErrorCode.NOT_EXISTS_PROJECT_DETAIL);
         }
 
         try {

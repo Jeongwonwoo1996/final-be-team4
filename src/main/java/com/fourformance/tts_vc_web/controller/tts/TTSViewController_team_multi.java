@@ -123,20 +123,26 @@ public class TTSViewController_team_multi {
     @DeleteMapping("/delete/details")
     public ResponseDto deleteTTSDetails(@RequestBody DeleteReqDto ttsDeleteDto) {
 
+        // 프로젝트 ID 체크
+        if (ttsDeleteDto.getProjectId() == null) {
+            throw new BusinessException(ErrorCode.INVALID_PROJECT_ID);
+        }
+
         // TTS 선택된 항목 삭제
         if (ttsDeleteDto.getDetailIds() != null) {
-            projectService.deleteTTSDetail(ttsDeleteDto.getDetailIds());
+            projectService.deleteTTSDetail(ttsDeleteDto.getProjectId(), ttsDeleteDto.getDetailIds());
         }
 
         // 선택된 오디오 삭제
         if (ttsDeleteDto.getAudioIds() != null) {
             projectService.deleteAudioIds(ttsDeleteDto.getAudioIds());
+
+            // 버킷에서 오디오 삭제
+            for (Long metaId : ttsDeleteDto.getAudioIds()) {
+                s3Service.deleteAudioOutput(metaId);
+            }
         }
 
-        // 버킷에서 오디오 삭제
-        for (Long metaId : ttsDeleteDto.getAudioIds()) {
-            s3Service.deleteAudioOutput(metaId);
-        }
 
         return DataResponseDto.of("", "선택된 모든 항목이 정상적으로 삭제되었습니다.");
     }
