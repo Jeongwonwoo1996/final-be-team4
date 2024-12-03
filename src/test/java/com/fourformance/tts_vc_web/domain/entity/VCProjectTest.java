@@ -1,24 +1,26 @@
 package com.fourformance.tts_vc_web.domain.entity;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+
 import com.fourformance.tts_vc_web.common.constant.AudioType;
-import com.fourformance.tts_vc_web.repository.*;
+import com.fourformance.tts_vc_web.repository.MemberAudioMetaRepository;
+import com.fourformance.tts_vc_web.repository.MemberRepository;
+import com.fourformance.tts_vc_web.repository.VCDetailRepository;
+import com.fourformance.tts_vc_web.repository.VCProjectRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
-import org.junit.jupiter.api.BeforeEach;
+import java.time.LocalDateTime;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.annotation.Rollback;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-import java.util.Optional;
-
-import static org.junit.jupiter.api.Assertions.*;
 @SpringBootTest
 @Transactional
-@Rollback(value= false)
+//@Rollback(false)
 class VCProjectTest {
 
     @Autowired
@@ -37,12 +39,10 @@ class VCProjectTest {
 
 
     public Member createTestMember() {
-        Member member = Member.createMember("aaa@aaa.com", "1234","imsi",0, LocalDateTime.now(),"01012341234",true);
+        Member member = Member.createMember("aaa@aaa.com", "1234", "imsi", 0, LocalDateTime.now(), "01012341234", true);
 
         return member;
     }
-
-
 
 
     // 1. 저장 테스트
@@ -54,7 +54,7 @@ class VCProjectTest {
         // 생성된 멤버를 저장한다.
         memberRepository.save(member);
         // 프로젝트 생성한다.
-        VCProject vcProject = VCProject.createVCProject(member,"VC프로젝트1");
+        VCProject vcProject = VCProject.createVCProject(member, "VC프로젝트1");
         // 프로젝트를 저장한다.
         vcProjectRepository.save(vcProject);
         // 쌓인 쿼리문을 쭉 날리고
@@ -79,12 +79,12 @@ class VCProjectTest {
         // 멤버를 저장하고
         memberRepository.save(member);
         // VCProject를 생성하고 저장한다.
-        VCProject vcProject = VCProject.createVCProject(member,"삭제할 프로젝트");
+        VCProject vcProject = VCProject.createVCProject(member, "삭제할 프로젝트");
         vcProjectRepository.save(vcProject);
         em.flush();
         em.clear();
         // VC프로젝트를 Id로 찾고,
-        VCProject afterVCProject =vcProjectRepository.findById(vcProject.getId()).orElse(null);
+        VCProject afterVCProject = vcProjectRepository.findById(vcProject.getId()).orElse(null);
         // VCProject가 NotNull이면?
         assertNotNull(afterVCProject);
         //VCProject삭제
@@ -108,7 +108,7 @@ class VCProjectTest {
         // 멤버를 저장하고
         memberRepository.save(member);
         // VCProject를 생성하고 저장한다.
-        VCProject vcProject = VCProject.createVCProject(member,"업데이트할 프로젝트");
+        VCProject vcProject = VCProject.createVCProject(member, "업데이트할 프로젝트");
         vcProjectRepository.save(vcProject);
         //타켓 오디오 메타 생성하고 저장하고
         MemberAudioMeta targetAudioMeta = MemberAudioMeta.createMemberAudioMeta(member, null, "/경로1", AudioType.VC_TRG);
@@ -118,17 +118,17 @@ class VCProjectTest {
 //        em.clear();
 
         //when
-        VCProject findVCProject =vcProjectRepository.findById(vcProject.getId()).orElse(null);
-        findVCProject.updateVCProject("업데이트된 프로젝트",targetAudioMeta);
+        VCProject findVCProject = vcProjectRepository.findById(vcProject.getId()).orElse(null);
+        findVCProject.updateVCProject("업데이트된 프로젝트", targetAudioMeta);
 
         vcProjectRepository.save(findVCProject);
         em.flush();
         em.clear();
 
-        VCProject afterVCProject =vcProjectRepository.findById(findVCProject.getId()).orElse(null);
+        VCProject afterVCProject = vcProjectRepository.findById(findVCProject.getId()).orElse(null);
 
         //then
-        assertEquals(afterVCProject.getProjectName(),findVCProject.getProjectName());
+        assertEquals(afterVCProject.getProjectName(), findVCProject.getProjectName());
 
     }
 }
