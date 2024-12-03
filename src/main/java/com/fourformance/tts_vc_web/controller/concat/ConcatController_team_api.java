@@ -8,6 +8,7 @@ import com.fourformance.tts_vc_web.dto.concat.ConcatResponseDto;
 import com.fourformance.tts_vc_web.dto.response.DataResponseDto;
 import com.fourformance.tts_vc_web.dto.response.ResponseDto;
 import com.fourformance.tts_vc_web.service.concat.ConcatService_team_api;
+import com.fourformance.tts_vc_web.service.vc.VCService_team_multi;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -33,6 +34,7 @@ public class ConcatController_team_api {
     private static final Logger LOGGER = Logger.getLogger(ConcatController_team_api.class.getName()); // 로거 초기화
 
     private final ConcatService_team_api concatService; // 병합 서비스 의존성 주입
+    private final VCService_team_multi vcService;
 
     @PostMapping(
             value = "/convert/batch",
@@ -84,10 +86,11 @@ public class ConcatController_team_api {
             // 3. 요청 DTO의 각 상세 항목에 업로드된 파일 매핑
             for (int i = 0; i < details.size(); i++) {
                 ConcatRequestDetailDto detail = details.get(i);
-                MultipartFile file = files.get(i);
+//                MultipartFile file = files.get(i);
+                MultipartFile file = vcService.findMultipartFileByName(files, detail.getLocalFileName());
 
                 // 예를 들어, 파일명과 detail의 정보가 일치하는지 확인
-                LOGGER.info("매핑 중 - Detail AudioSeq: " + detail.getAudioSeq() + ", 파일명: " + file.getOriginalFilename());
+                LOGGER.info("매핑 중 - Detail localFileName: " + detail.getLocalFileName() + ", 파일명: " + file.getOriginalFilename());
 
                 detail.setSourceAudio(file);
 

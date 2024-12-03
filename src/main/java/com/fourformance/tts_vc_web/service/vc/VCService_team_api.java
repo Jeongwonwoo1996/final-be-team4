@@ -81,16 +81,24 @@ public class VCService_team_api {
 
         // Step 5: 저장된 타겟(TRG) 오디오 정보 가져오기
         MemberAudioMeta memberAudio = memberAudioMetaRepository.findSelectedAudioByTypeAndMember(AudioType.VC_TRG, memberId);
-        if (memberAudio == null) {
-            throw new BusinessException(ErrorCode.FILE_PROCESSING_ERROR);
+        String voiceId;
+
+        if (memberAudio != null) {
+            LOGGER.info("[타겟 오디오 조회 완료] 오디오 ID: " + memberAudio.getId());
+
+            // Step 6: 타겟 오디오로 Voice ID 생성
+            voiceId = processTargetFiles(VCSaveRequestDto.getTrgFiles(), memberAudio);
+            LOGGER.info("[Voice ID 생성 완료] Voice ID: " + voiceId);
+        } else {
+            if (VCSaveRequestDto.getTrgFiles() == null || VCSaveRequestDto.getTrgFiles().isEmpty()) {
+                throw new BusinessException(ErrorCode.TRG_FILES_EMPTY);
+            }
+
+            voiceId = memberAudioMetaRepository.findtrgVoiceIdById(VCSaveRequestDto.getTrgFiles().get(0).getS3MemberAudioMetaId());
+            if (voiceId == null) {
+                throw new BusinessException(ErrorCode.INVALID_VOICE_ID);
+            }
         }
-        LOGGER.info("[타겟 오디오 조회 완료] 오디오 ID: " + memberAudio.getId());
-
-        // Step 6: 타겟 오디오로 Voice ID 생성
-
-        String voiceId = processTargetFiles(VCSaveRequestDto.getTrgFiles(), memberAudio);
-
-        LOGGER.info("[Voice ID 생성 완료] Voice ID: " + voiceId);
 
         // Step 7: VC 프로젝트에 trg_voice_id 업데이트
         updateProjectTargetVoiceId(projectId, voiceId);
@@ -105,60 +113,61 @@ public class VCService_team_api {
         return vcDetailsRes;
     }
 
-    /**
-     * 타겟 오디오 파일 처리 및 Voice ID 생성 -> 월 한도 돌아오면 사용
-     */
-    private String processTargetFiles(List<TrgAudioFileRequestDto> trgFiles, MemberAudioMeta memberAudio) {
-        if (trgFiles == null || trgFiles.isEmpty()) {
-            throw new BusinessException(ErrorCode.FILE_PROCESSING_ERROR);
-        }
-        try {
-            // Step 1: Target 파일 URL 확인
-            if (memberAudio == null || memberAudio.getAudioUrl() == null) {
-                throw new BusinessException(ErrorCode.FILE_PROCESSING_ERROR);
-            }
-            String targetFileUrl = memberAudio.getAudioUrl();
-            LOGGER.info("[타겟 오디오 업로드 시작] URL: " + targetFileUrl);
-
-            // Step 2: Voice ID 생성
-            String voiceId = elevenLabsClient.uploadVoice(targetFileUrl);
-            LOGGER.info("[Voice ID 생성 완료] Voice ID: " + voiceId);
-
-            // Step 3: Voice ID 저장
-            memberAudio.update(voiceId);
-            memberAudioMetaRepository.save(memberAudio);
-            LOGGER.info("[MemberAudioMeta 업데이트 완료] Voice ID: " + voiceId);
-
-            return voiceId;
-        } catch (IOException e) {
-            LOGGER.severe("[Voice ID 생성 실패] " + e.getMessage());
-            throw new BusinessException(ErrorCode.FILE_PROCESSING_ERROR);
-        }
-    }
 
 //    /**
-//     * 타겟 오디오 파일 처리 및 Voice ID 생성 ->  월 한도 제한으로 하드코딩 함
+//     * 타겟 오디오 파일 처리 및 Voice ID 생성 -> 월 한도 돌아오면 사용
 //     */
 //    private String processTargetFiles(List<TrgAudioFileRequestDto> trgFiles, MemberAudioMeta memberAudio) {
 //        if (trgFiles == null || trgFiles.isEmpty()) {
 //            throw new BusinessException(ErrorCode.FILE_PROCESSING_ERROR);
 //        }
 //        try {
-//            // 하드코딩된 Voice ID 사용
-//            String voiceId = "DNSy71aycodz7FWtd91e"; // 테스트용 하드코딩
-//            LOGGER.info("[Voice ID 하드코딩 적용] Voice ID: " + voiceId);
+//            // Step 1: Target 파일 URL 확인
+//            if (memberAudio == null || memberAudio.getAudioUrl() == null) {
+//                throw new BusinessException(ErrorCode.FILE_PROCESSING_ERROR);
+//            }
+//            String targetFileUrl = memberAudio.getAudioUrl();
+//            LOGGER.info("[타겟 오디오 업로드 시작] URL: " + targetFileUrl);
 //
-//            // Voice ID를 MemberAudioMeta에 업데이트
+//            // Step 2: Voice ID 생성
+//            String voiceId = elevenLabsClient.uploadVoice(targetFileUrl);
+//            LOGGER.info("[Voice ID 생성 완료] Voice ID: " + voiceId);
+//
+//            // Step 3: Voice ID 저장
 //            memberAudio.update(voiceId);
 //            memberAudioMetaRepository.save(memberAudio);
 //            LOGGER.info("[MemberAudioMeta 업데이트 완료] Voice ID: " + voiceId);
 //
 //            return voiceId;
-//        } catch (Exception e) {
-//            LOGGER.severe("[타겟 파일 처리 실패] " + e.getMessage());
+//        } catch (IOException e) {
+//            LOGGER.severe("[Voice ID 생성 실패] " + e.getMessage());
 //            throw new BusinessException(ErrorCode.FILE_PROCESSING_ERROR);
 //        }
 //    }
+
+    /**
+     * 타겟 오디오 파일 처리 및 Voice ID 생성 ->  월 한도 제한으로 하드코딩 함
+     */
+    private String processTargetFiles(List<TrgAudioFileRequestDto> trgFiles, MemberAudioMeta memberAudio) {
+        if (trgFiles == null || trgFiles.isEmpty()) {
+            throw new BusinessException(ErrorCode.FILE_PROCESSING_ERROR);
+        }
+        try {
+            // 하드코딩된 Voice ID 사용
+            String voiceId = "DNSy71aycodz7FWtd91e"; // 테스트용 하드코딩
+            LOGGER.info("[Voice ID 하드코딩 적용] Voice ID: " + voiceId);
+
+            // Voice ID를 MemberAudioMeta에 업데이트
+            memberAudio.update(voiceId);
+            memberAudioMetaRepository.save(memberAudio);
+            LOGGER.info("[MemberAudioMeta 업데이트 완료] Voice ID: " + voiceId);
+
+            return voiceId;
+        } catch (Exception e) {
+            LOGGER.severe("[타겟 파일 처리 실패] " + e.getMessage());
+            throw new BusinessException(ErrorCode.FILE_PROCESSING_ERROR);
+        }
+    }
 
 
     /**
