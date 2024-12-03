@@ -21,6 +21,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.PostConstruct;
 import java.io.File;
@@ -80,6 +81,20 @@ public class ConcatService_TaskJob {
         // FFmpeg 인스턴스 초기화 (예시)
         setupFFmpeg();
     }
+
+    @Transactional
+    public void enqueueConcatTask(ConcatRequestDto concatReqDto, List<MultipartFile> files, Long memberId){
+        // vcService_team_multi에서 주입받고 private MultipartFile findMultipartFileByName(List<MultipartFile> files, String localFileName) 메서드 사용하기
+    }
+
+    /** 해당 메서드 갖다 쓰기~
+     *     private MultipartFile findMultipartFileByName(List<MultipartFile> files, String localFileName) {
+     *         return files.stream()
+     *                 .filter(file -> file.getOriginalFilename().equals(localFileName))
+     *                 .findFirst()
+     *                 .orElseThrow(() -> new BusinessException(ErrorCode.FILE_PROCESSING_ERROR));
+     *     }
+     */
 
     /**
      * 테스트 환경인지 확인하는 메서드
