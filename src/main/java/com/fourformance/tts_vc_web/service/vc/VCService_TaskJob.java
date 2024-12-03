@@ -151,35 +151,35 @@ public class VCService_TaskJob {
     /**
      * VC 프로젝트 상태 업데이트
      */
-    public void updateProjectStatus(Long projectId) {
-        List<VCDetail> details = vcDetailRepository.findByVcProject_Id(projectId);
-        if (details.isEmpty()) {
-            throw new BusinessException(ErrorCode.VC_DETAIL_NOT_FOUND);
-        }
-        boolean hasFailure = false;
-        boolean allSuccess = true;
-        for (VCDetail detail : details) {
-            List<APIStatus> apiStatuses = detail.getApiStatuses();
-            if (apiStatuses.stream().anyMatch(status -> status.getApiUnitStatusConst() == APIUnitStatusConst.FAILURE)) {
-                hasFailure = true;
-                allSuccess = false;
-                break;
-            }
-            if (!apiStatuses.stream().allMatch(status -> status.getApiUnitStatusConst() == APIUnitStatusConst.SUCCESS)) {
-                allSuccess = false;
-            }
-        }
-        VCProject project = vcProjectRepository.findById(projectId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.PROJECT_NOT_FOUND));
-        if (hasFailure) {
-            project.updateAPIStatus(APIStatusConst.FAILURE);
-        } else if (allSuccess) {
-            project.updateAPIStatus(APIStatusConst.SUCCESS);
-        } else {
-            project.updateAPIStatus(APIStatusConst.NOT_STARTED);
-        }
-        vcProjectRepository.save(project);
-        LOGGER.info("[VC 프로젝트 상태 업데이트 완료]");
+    public void updateProjectStatus(Long detailId) {
+        VCDetail detail = vcDetailRepository.findById(detailId)
+                .orElseThrow(()->new BusinessException(ErrorCode.VC_DETAIL_NOT_FOUND));
+
+
+//        boolean hasFailure = false;
+//        boolean allSuccess = true;
+//        for (VCDetail detail : details) {
+//            List<APIStatus> apiStatuses = detail.getApiStatuses();
+//            if (apiStatuses.stream().anyMatch(status -> status.getApiUnitStatusConst() == APIUnitStatusConst.FAILURE)) {
+//                hasFailure = true;
+//                allSuccess = false;
+//                break;
+//            }
+//            if (!apiStatuses.stream().allMatch(status -> status.getApiUnitStatusConst() == APIUnitStatusConst.SUCCESS)) {
+//                allSuccess = false;
+//            }
+//        }
+//        VCProject project = vcProjectRepository.findById(projectId)
+//                .orElseThrow(() -> new BusinessException(ErrorCode.PROJECT_NOT_FOUND));
+//        if (hasFailure) {
+//            project.updateAPIStatus(APIStatusConst.FAILURE);
+//        } else if (allSuccess) {
+//            project.updateAPIStatus(APIStatusConst.SUCCESS);
+//        } else {
+//            project.updateAPIStatus(APIStatusConst.NOT_STARTED);
+//        }
+//        vcProjectRepository.save(project);
+//        LOGGER.info("[VC 프로젝트 상태 업데이트 완료]");
     }
 
 

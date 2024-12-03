@@ -56,7 +56,7 @@ public class TaskConsumer {
     @RabbitListener(queues = TaskConfig.TTS_QUEUE, ackMode = "MANUAL")
     public void handleTTSTask(String message, Channel channel, @Header(AmqpHeaders.DELIVERY_TAG) long tag) {
 
-         Long projectId = -1L;
+        Long projectId = -1L;
         Long detailId  = -1L;
         Long taskId    = -1L;
 
@@ -66,6 +66,8 @@ public class TaskConsumer {
             projectId = ttsMsgDto.getProjectId();
             detailId  = ttsMsgDto.getDetailId();
             taskId    = ttsMsgDto.getTaskId();
+
+            if(projectId == -1L || detailId == -1L || taskId == -1) { throw new BusinessException(ErrorCode.JSON_PROCESSING_ERROR); }
 
             // 상태 업데이트
             updateStatus(taskId, TaskStatusConst.RUNNABLE, "작업 시작");
@@ -110,9 +112,9 @@ public class TaskConsumer {
 
             try { // Dead Letter Queue로 메시지 전달
                 channel.basicNack(tag, false, false);
-                updateStatus(taskId, TaskStatusConst.FAILED, "작업 실패");
-            }
-            catch (IOException ioException) {
+            } catch (IOException ioException) {
+                throw new BusinessException(ErrorCode.FAILED_TASK_PROCESSING_ERROR);
+            } finally {
                 updateStatus(taskId, TaskStatusConst.FAILED, "작업 실패");
                 sseService.sendToClient(projectId, null);
             }
@@ -124,7 +126,7 @@ public class TaskConsumer {
      * VC 작업 처리: 큐에서 작업을 꺼내 VC 작업 처리
      *
      */
-    @RabbitListener(queues = TaskConfig.VC_QUEUE)
+    @RabbitListener(queues = TaskConfig.VC_QUEUE, ackMode = "MANUAL")
     public void handleVCTask(String message, Channel channel, @Header(AmqpHeaders.DELIVERY_TAG) long tag) {
 
         Long projectId = -1L;
@@ -132,27 +134,22 @@ public class TaskConsumer {
         Long taskId    = -1L;
 
         try {
-            // meassage(String) -> TTSMsgDto 로 역직렬화
+            // meassage(String) -> VCMsgDto 로 역직렬화
             VCMsgDto vcMsgDto = objectMapper.readValue(message, VCMsgDto.class);
             projectId = vcMsgDto.getProjectId();
             detailId  = vcMsgDto.getDetailId();
             taskId    = vcMsgDto.getTaskId();
 
+            if(projectId == -1L || detailId == -1L || taskId == -1) { throw new BusinessException(ErrorCode.JSON_PROCESSING_ERROR); }
+
             // 상태 업데이트
             updateStatus(taskId, TaskStatusConst.RUNNABLE, "작업 시작");
-            sseService.sendToClient(projectId, "TTS 작업이 시작되었습니다.");
+            sseService.sendToClient(projectId, "VC 작업이 시작되었습니다.");
 
             // VC 작업
             VCDetailResDto vcDetailsRes = vcService.processSourceFile(vcMsgDto);
 
-
-            // 프로젝트 상태 업데이트
-            vcService.updateProjectStatus(projectId);
-
-
             ResponseDto response =  DataResponseDto.of(vcDetailsRes);
-
-            System.out.println("========================response.toString() = " + response.toString());
 
             // 메시지 처리 완료 시 (1. RabbitMQ에 ACK 전송, 2. SSE로 전달, 3. 상태값 변환(완료))
             channel.basicAck(tag, false);
@@ -170,9 +167,9 @@ public class TaskConsumer {
 
             try { // Dead Letter Queue로 메시지 전달
                 channel.basicNack(tag, false, false);
-                updateStatus(taskId, TaskStatusConst.FAILED, "작업 실패");
-            }
-            catch (IOException ioException) {
+            } catch (IOException ioException) {
+                throw new BusinessException(ErrorCode.FAILED_TASK_PROCESSING_ERROR);
+            } finally {
                 updateStatus(taskId, TaskStatusConst.FAILED, "작업 실패");
                 sseService.sendToClient(projectId, null);
             }

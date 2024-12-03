@@ -57,6 +57,11 @@ public class SseEmitterService {
      * 클라이언트에게 데이터 전송
      */
     public void sendToClient(Long projectId, Object data) {
+
+        if (data == null) {
+            data = "No data available";
+        }
+
         // projectId를 기반으로 memberId를 찾습니다.
         Long memberId = projectRepository.findById(projectId)
                 .map(project -> project.getMember().getId()) // Project에서 Member를 찾아 Member ID 반환
