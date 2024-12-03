@@ -22,13 +22,9 @@ public class AudioScheduler {
         memberAudioMetaService.deleteOldVcAudios();
     }
 
-    @Scheduled(cron = "0 1 19 * * ?") // 매주 일요일 새벽 1시에 처리 예약
+    @Scheduled(cron = "0 0 0 * * ?") // 매주 일요일 새벽 1시에 처리 예약
     public void cleanUpDeletedFiles() {
-        System.out.println(
-                "지정된 시간입니다!!!!! concat 데이터 전부 날리겠습니다!!!! @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
-        System.out.println("S3에서 삭제 요청된 파일을 확인하고 삭제 작업을 시작합니다...");
         schedulerService.recheckDeleteAllS3Audio();
-        System.out.println("S3에서 불필요한 파일 삭제 작업을 완료했습니다.");
     }
 
 //    @Scheduled(cron = "0 28 16 * * ?") // 매일 오후 4시 10분
