@@ -45,8 +45,8 @@ public class WorkSpaceController {
     @GetMapping("/project-list")
     public ResponseDto getRecentProjects(HttpSession session) {
 
-//        Long memberId = (Long) session.getAttribute("member_id");
-        Long memberId = 1L; // 임시 하드코딩
+        Long memberId = (Long) session.getAttribute("memberId");
+//        Long memberId = 1L; // 임시 하드코딩
 
         // Service에서 처리된 응답 그대로 반환
         List<RecentProjectDto> projects = workspaceService.getRecentProjects(memberId);
@@ -55,7 +55,8 @@ public class WorkSpaceController {
 
     @GetMapping("/export-list")
     public ResponseDto getRecentExports(HttpSession session) {
-        Long memberId = 1L; // 임시 하드코딩 (세션 구현 후 교체)
+        Long memberId = (Long) session.getAttribute("memberId");
+//        Long memberId = 1L; // 임시 하드코딩 (세션 구현 후 교체)
         List<RecentExportDto> exports = workspaceService.getRecentExports(memberId);
         return DataResponseDto.of(exports);
     }
@@ -64,8 +65,8 @@ public class WorkSpaceController {
     public ResponseEntity<List<ProjectListDto>> getProjects(
             @RequestParam(name = "keyword", required = false) String keyword,
             HttpSession session) {
-//        Long memberId = (Long) session.getAttribute("memberId");
-        Long memberId = 1L; // 개발단계 임시 하드코딩
+        Long memberId = (Long) session.getAttribute("memberId");
+//        Long memberId = 1L; // 개발단계 임시 하드코딩
         List<ProjectListDto> projects = projectRepository.findProjectsBySearchCriteria(memberId, keyword);
         return ResponseEntity.ok(projects);
     }
@@ -76,8 +77,8 @@ public class WorkSpaceController {
             @PageableDefault(size = 10) Pageable pageable,
             HttpSession session
     ) {
-        //        Long memberId = (Long) session.getAttribute("memberId");
-        Long memberId = 1L; // 개발단계 임시 하드코딩
+        Long memberId = (Long) session.getAttribute("memberId");
+//        Long memberId = 1L; // 개발단계 임시 하드코딩
 
         Page<ProjectListDto> projects = projectRepository.findProjectsBySearchCriteria(memberId, keyword, pageable);
         return DataResponseDto.of(projects);
@@ -90,7 +91,8 @@ public class WorkSpaceController {
     ) {
         // 임시로 memberId를 하드코딩 (개발 단계)
         // 실제 배포에서는 세션에서 memberId를 가져와야 합니다.
-        Long memberId = 1L; // (Long) session.getAttribute("memberId");
+//        Long memberId = 1L; // (Long) session.getAttribute("memberId");
+        Long memberId = (Long) session.getAttribute("memberId");
 
         // WorkspaceService의 메서드 호출
         List<ExportWithDownloadLinkDto> exports = workspaceService.getRecentExportsWithDownloadLink(memberId, keyword);
@@ -106,8 +108,8 @@ public class WorkSpaceController {
             HttpSession session
 
     ) {
-        Long memberId = 1L;
-
+//        Long memberId = 1L;
+        Long memberId = (Long) session.getAttribute("memberId");
         Page<ExportWithDownloadLinkDto> exports = outputAudioMetaRepository.findExportHistoryBySearchCriteria(memberId,
                 keyword, pageable);
         return DataResponseDto.of(exports);
