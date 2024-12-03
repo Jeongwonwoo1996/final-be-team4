@@ -58,7 +58,6 @@ public class WorkSpaceController {
     public ResponseDto getRecentProjects2(HttpSession session) {
 
         Long memberId = (Long) session.getAttribute("memberId");
-//        Long memberId = 1L; // 임시 하드코딩
 
         // Service에서 처리된 응답 그대로 반환
         List<RecentProjectDto> projects = workspaceService.getRecentProjects(memberId);
