@@ -13,6 +13,7 @@ import org.springframework.web.multipart.MultipartFile;
 public class ConcatRequestDetailDto {
 
     private Long id;
+    private String localFileName;
     private Integer audioSeq;
     private boolean isChecked;
     private String unitScript;
