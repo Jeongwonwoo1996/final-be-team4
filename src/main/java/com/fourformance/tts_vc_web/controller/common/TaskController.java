@@ -2,20 +2,26 @@ package com.fourformance.tts_vc_web.controller.common;
 
 import com.fourformance.tts_vc_web.common.exception.common.BusinessException;
 import com.fourformance.tts_vc_web.common.exception.common.ErrorCode;
+import com.fourformance.tts_vc_web.dto.common.TaskLoadDto;
 import com.fourformance.tts_vc_web.dto.response.DataResponseDto;
 import com.fourformance.tts_vc_web.dto.response.ResponseDto;
 import com.fourformance.tts_vc_web.service.common.TaskProducer;
+import com.fourformance.tts_vc_web.service.common.TaskService;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
 @RequestMapping("/tasks")
 @RequiredArgsConstructor
 public class TaskController {
 
     private final TaskProducer taskProducer;
+    private final TaskService taskService;
 
     @PostMapping
     public String sendTask(@RequestParam String taskType, @RequestBody String message) {
@@ -35,9 +41,9 @@ public class TaskController {
         }
         Long memberId = (Long) session.getAttribute("memberId");
 
+        List<TaskLoadDto> taskLoadDtos = taskService.getTasksByMemberAndConditions(memberId);
 
-
-        return DataResponseDto.of("");
+        return DataResponseDto.of(taskLoadDtos, "작업 목록");
     }
 
     @Operation(
