@@ -115,12 +115,12 @@ public class ConcatService_TaskJob {
         }
 
         // 프로젝트 저장
-        ConcatProject concatProject = concatService.saveOrUpdateProject(concatReqDto, memberId);
+        ConcatProject concatProject = saveOrUpdateProject(concatReqDto, memberId);
 
         // 디테일 저장
         for (ConcatRequestDetailDto detail : details) {
-            MemberAudioMeta memberAudioMeta = concatService.uploadConcatDetailSourceAudio(detail, concatProject);
-            concatService.saveOrUpdateDetail(detail, concatProject,memberAudioMeta);
+            MemberAudioMeta memberAudioMeta = uploadConcatDetailSourceAudio(detail, concatProject);
+            saveOrUpdateDetail(detail, concatProject,memberAudioMeta);
         }
 
         // 프로젝트 ID로 연관된 concat 디테일 조회
@@ -138,8 +138,6 @@ public class ConcatService_TaskJob {
 
         // 메시지 생성 및 RabbitMQ에 전송
         taskProducer.sendTask("AUDIO_CONCAT", msgDto);
-
-
     }
 
     private String convertToJson(ConcatMsgDto msgDto) {
