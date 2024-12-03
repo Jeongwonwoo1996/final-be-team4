@@ -228,7 +228,7 @@ public class ConcatService_team_api {
     /**
      * 프로젝트 생성 또는 업데이트
      */
-    private ConcatProject saveOrUpdateProject(ConcatRequestDto concatRequestDto, Long memberId) {
+    public ConcatProject saveOrUpdateProject(ConcatRequestDto concatRequestDto, Long memberId) {
         return Optional.ofNullable(concatRequestDto.getProjectId())
                 .map(projectId -> {
                     updateProject(concatRequestDto, memberId);
@@ -272,7 +272,7 @@ public class ConcatService_team_api {
     /**
      * 디테일 저장 또는 업데이트
      */
-    private ConcatDetail saveOrUpdateDetail(ConcatRequestDetailDto detailDto, ConcatProject concatProject, MemberAudioMeta memberAudioMeta) {
+    public ConcatDetail saveOrUpdateDetail(ConcatRequestDetailDto detailDto, ConcatProject concatProject, MemberAudioMeta memberAudioMeta) {
         return Optional.ofNullable(detailDto.getId())
                 .map(id -> {
                     updateConcatDetail(detailDto, concatProject);
@@ -316,7 +316,7 @@ public class ConcatService_team_api {
     /**
      * 요청된 디테일의 소스 오디오를 S3에 업로드 후 MemberAudioMeta 반환
      */
-    private MemberAudioMeta uploadConcatDetailSourceAudio(ConcatRequestDetailDto detailDto, ConcatProject concatProject) {
+    public MemberAudioMeta uploadConcatDetailSourceAudio(ConcatRequestDetailDto detailDto, ConcatProject concatProject) {
         // 파일 업로드 및 MemberAudioMeta 생성
         List<MemberAudioMeta> memberAudioMetas = s3Service.uploadAndSaveMemberFile2(
                 Collections.singletonList(detailDto.getSourceAudio()),

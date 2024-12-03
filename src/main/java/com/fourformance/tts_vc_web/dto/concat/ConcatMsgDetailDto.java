@@ -1,14 +1,12 @@
 package com.fourformance.tts_vc_web.dto.concat;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 @Getter
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
+@Builder
 public class ConcatMsgDetailDto {
 
     private Long detailId;

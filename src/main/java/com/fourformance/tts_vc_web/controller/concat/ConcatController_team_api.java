@@ -69,42 +69,9 @@ public class ConcatController_team_api {
         Long memberId = (Long) session.getAttribute("memberId");
 
 
-        // 1. 유효성 검증: 요청 데이터 및 상세 데이터 확인
-        if (concatRequestDto == null ||
-                concatRequestDto.getConcatRequestDetails() == null ||
-                concatRequestDto.getConcatRequestDetails().isEmpty()) {
-            throw new BusinessException(ErrorCode.INVALID_REQUEST_DATA); // 커스텀 예외 발생
-        }
         concatTaskService.enqueueConcatTask(concatRequestDto,files,memberId);
-        try {
-            // 2. 파일 수와 요청 DTO의 상세 정보 수가 동일한지 확인
-            List<ConcatRequestDetailDto> details = concatRequestDto.getConcatRequestDetails();
-            if (details.size() != files.size()) {
-                LOGGER.warning("파일 수와 요청 DTO의 상세 데이터 수가 일치하지 않음");
-                throw new BusinessException(ErrorCode.INVALID_REQUEST_DATA);
-            }
 
-            // 3. 요청 DTO의 각 상세 항목에 업로드된 파일 매핑
-            for (int i = 0; i < details.size(); i++) {
-                ConcatRequestDetailDto detail = details.get(i);
-                MultipartFile file = vcService.findMultipartFileByName(files, detail.getLocalFileName());
 
-                // 예를 들어, 파일명과 detail의 정보가 일치하는지 확인
-                LOGGER.info("매핑 중 - Detail localFileName: " + detail.getLocalFileName() + ", 파일명: " + file.getOriginalFilename());
-
-                detail.setSourceAudio(file);
-            }
-
-            // 4. 서비스 로직 호출: 병합 처리 실행
-            ConcatResponseDto concatResponse = concatService.convertAllConcatDetails(concatRequestDto, memberId);
-
-            // 5. 성공적인 응답 반환
-            return DataResponseDto.of(concatResponse);
-
-        } catch (Exception e) {
-            // 예외 발생 시 에러 로그 기록 및 커스텀 예외 반환
-            log.error("오디오 병합 중 오류 발생", e);
-            throw new BusinessException(ErrorCode.NOT_EXISTS_AUDIO); // 에러 코드 반환
-        }
+        return DataResponseDto.of("Concat 작업이 큐에 추가되었습니다.");
     }
 }
