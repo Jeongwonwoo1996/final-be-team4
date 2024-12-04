@@ -115,6 +115,7 @@ public enum ErrorCode {
     VC_PROJECT_NOT_FOUND(5065, HttpStatus.BAD_REQUEST, "VC 프로젝트를 찾을 수 없습니다."),
     INTERNAL_SERVER_VC_ERROR(5066, HttpStatus.INTERNAL_SERVER_ERROR, "VC 처리 중 서버 오류가 발생했습니다."),
     INVALID_REQUEST_FILE_DATA(5067, HttpStatus.BAD_REQUEST, "유효하지 않은 요청 파일 데이터입니다."),
+    AUDIO_URL_NOT_FOUND(5068, HttpStatus.BAD_REQUEST, "Audio URL을 찾을 수 없습니다."),
 
     // 6000번대 코드 : 회원 서비스 예외
     PASSWORD_MISMATCH(6001, HttpStatus.BAD_REQUEST, "비밀번호가 일치하지 않습니다."),
