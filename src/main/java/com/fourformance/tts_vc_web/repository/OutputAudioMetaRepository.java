@@ -58,7 +58,7 @@ public interface OutputAudioMetaRepository extends JpaRepository<OutputAudioMeta
             """)
     List<OutputAudioMeta> findTop5ByMemberId(@Param("memberId") Long memberId);
 
-    // 프로젝트 id로 관련된 모든 아웃풋 메타 데이터 조회
+    // 프로젝트 id로 관련된 모든 아웃풋 메타 데이터 조회ㅡ
     @Query("SELECT oam FROM OutputAudioMeta oam " +
             "LEFT JOIN oam.ttsDetail td ON td.ttsProject.id = :projectId " +
             "LEFT JOIN oam.vcDetail vd ON vd.vcProject.id = :projectId " +
