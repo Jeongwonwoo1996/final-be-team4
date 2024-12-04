@@ -12,8 +12,9 @@ import org.springframework.web.multipart.MultipartFile;
 @NoArgsConstructor
 public class ConcatRequestDetailDto {
 
-    private Long id;
-    private String localFileName;
+    private Long id; // concatDetail ID
+    private Long memberAudioId; // S3 파일이 업로드된 memberAudioMeta ID
+    private String localFileName; // 로컬 파일 매칭 여부
     private Integer audioSeq;
     private boolean isChecked;
     private String unitScript;

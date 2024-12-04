@@ -1,17 +1,16 @@
 package com.fourformance.tts_vc_web.dto.workspace;
 
-import com.fourformance.tts_vc_web.common.constant.APIUnitStatusConst;
-import com.fourformance.tts_vc_web.common.constant.ProjectType;
+import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import java.time.LocalDateTime;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 public class ExportWithDownloadLinkDto {
     private Long metaId;
+    private Long projectId;
     private String fileName;
     private String downloadLink; // Presigned URL
     private String unitStatus;
