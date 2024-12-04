@@ -96,7 +96,11 @@ public class VCService_team_multi {
                 .map(meta -> new GeneratedAudioDto(meta.getId(), meta.getAudioUrl())) // OutputAudioMeta의 id와 audioUrl을 GeneratedAudioDto로 매핑
                 .collect(Collectors.toList()); // Stream 결과를 List<GeneratedAudioDto>로 변환
 
-        String srcUrl = memberAudioMetaRepository.findAudioUrlsByAudioMetaIds(vcDetail.getMemberAudioMeta().getId(), AudioType.VC_SRC);
+        String srcUrl = null;
+
+        if(vcDetail.getMemberAudioMeta()!= null && vcDetail.getMemberAudioMeta().getId()!=null){
+            srcUrl = memberAudioMetaRepository.findAudioUrlsByAudioMetaIds(vcDetail.getMemberAudioMeta().getId(), AudioType.VC_SRC);
+        }
 
         VCDetailLoadDto resDto = new VCDetailLoadDto();
                        resDto.setId(vcDetail.getId());
@@ -346,7 +350,7 @@ public class VCService_team_multi {
         vcProject.injectTargetAudioMeta(audioMeta);
     }
 
-    private MultipartFile findMultipartFileByName(List<MultipartFile> files, String localFileName) {
+    public MultipartFile findMultipartFileByName(List<MultipartFile> files, String localFileName) {
         return files.stream()
                 .filter(file -> file.getOriginalFilename().equals(localFileName))
                 .findFirst()

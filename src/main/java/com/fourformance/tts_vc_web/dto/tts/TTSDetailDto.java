@@ -26,7 +26,7 @@ public class TTSDetailDto {
     private Float unitVolume; // 단위 볼륨
     private Boolean isDeleted; // 삭제 여부
     private Integer unitSequence; // 단위 시퀀스
-    private Long UnitVoiceStyleId; // 스타일 이름 (optional, lazy load 대신 포함할 수 있는 필드)
+    private Long unitVoiceStyleId; // 스타일 이름 (optional, lazy load 대신 포함할 수 있는 필드)
     private List<GeneratedAudioDto> genAudios;
 
 
