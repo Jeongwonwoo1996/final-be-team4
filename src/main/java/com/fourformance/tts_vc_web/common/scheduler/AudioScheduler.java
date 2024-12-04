@@ -2,7 +2,6 @@ package com.fourformance.tts_vc_web.common.scheduler;
 
 import com.fourformance.tts_vc_web.service.common.MemberAudioMetaService;
 import com.fourformance.tts_vc_web.service.common.SchedulerService;
-import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -33,9 +32,9 @@ public class AudioScheduler {
 //    }
 
     // 테스트 메서드: 10초마다 로그 출력
-    @Scheduled(fixedRate = 10000) // 10초마다 실행
-    public void testScheduler() {
-        System.out.println("스케줄러 잘 동작하는지 확인중 현재 시간 : " + LocalDateTime.now());
-    }
+//    @Scheduled(fixedRate = 10000) // 10초마다 실행
+//    public void testScheduler() {
+//        System.out.println("스케줄러 잘 동작하는지 확인중 현재 시간 : " + LocalDateTime.now());
+//    }
 
 }
