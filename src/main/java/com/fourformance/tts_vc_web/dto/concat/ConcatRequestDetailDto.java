@@ -21,5 +21,6 @@ public class ConcatRequestDetailDto {
     private boolean isChecked;
     private String unitScript;
     private Float endSilence;
+    @JsonIgnore
     private MultipartFile sourceAudio; // 업로드된 파일 (optional)
 }
