@@ -53,7 +53,7 @@ public class ConcatViewController_team_aws {
 
         // Member 객체 조회
         Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new IllegalStateException("Member not found"));
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
         Long projectId = concatService.saveConcatProject(concatSaveDto, files, member);
 
@@ -92,8 +92,6 @@ public class ConcatViewController_team_aws {
         if (deleteDto.getDetailIds() != null) {
             projectService.deleteSelectedDetails(deleteDto.getDetailIds());
         }
-
-        // 선택된 오디오 삭제
         if (deleteDto.getAudioIds() != null) {
             projectService.deleteAudioIds(deleteDto.getAudioIds());
 
