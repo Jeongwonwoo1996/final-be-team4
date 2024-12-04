@@ -35,7 +35,7 @@ public class QMemberAudioMeta extends EntityPathBase<MemberAudioMeta> {
     public final DateTimePath<java.time.LocalDateTime> createdAt = createDateTime("createdAt", java.time.LocalDateTime.class);
 
     //inherited
-    public final StringPath createdBy = _super.createdBy;
+    public final NumberPath<Long> createdBy = _super.createdBy;
 
     //inherited
     public final DateTimePath<java.time.LocalDateTime> createdDate = _super.createdDate;
@@ -49,7 +49,7 @@ public class QMemberAudioMeta extends EntityPathBase<MemberAudioMeta> {
     public final BooleanPath isSelected = createBoolean("isSelected");
 
     //inherited
-    public final StringPath lastModifiedBy = _super.lastModifiedBy;
+    public final NumberPath<Long> lastModifiedBy = _super.lastModifiedBy;
 
     //inherited
     public final DateTimePath<java.time.LocalDateTime> lastModifiedDate = _super.lastModifiedDate;

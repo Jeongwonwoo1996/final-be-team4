@@ -28,7 +28,7 @@ public class QConcatProject extends EntityPathBase<ConcatProject> {
     public final DateTimePath<java.time.LocalDateTime> createdAt;
 
     //inherited
-    public final StringPath createdBy;
+    public final NumberPath<Long> createdBy;
 
     //inherited
     public final DateTimePath<java.time.LocalDateTime> createdDate;
@@ -47,7 +47,7 @@ public class QConcatProject extends EntityPathBase<ConcatProject> {
     public final BooleanPath isDeleted;
 
     //inherited
-    public final StringPath lastModifiedBy;
+    public final NumberPath<Long> lastModifiedBy;
 
     //inherited
     public final DateTimePath<java.time.LocalDateTime> lastModifiedDate;
