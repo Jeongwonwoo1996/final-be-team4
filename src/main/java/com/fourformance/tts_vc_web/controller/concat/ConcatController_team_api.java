@@ -23,7 +23,9 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 @RestController
 @RequiredArgsConstructor
@@ -99,15 +101,42 @@ public class ConcatController_team_api {
 //            }
 
             // 파일이 있는 경우에만 매핑 로직 수행
-            if (files != null && !files.isEmpty()) {
-                // 2. 요청 DTO의 각 상세 항목에 업로드된 파일 매핑
-                for (int i = 0; i < details.size(); i++) {
-                    ConcatRequestDetailDto detail = details.get(i);
-                    MultipartFile file = vcService.findMultipartFileByName(files, detail.getLocalFileName());
+//            if (files != null && !files.isEmpty()) {
+//                // 2. 요청 DTO의 각 상세 항목에 업로드된 파일 매핑
+//                for (int i = 0; i < details.size(); i++) {
+//                    ConcatRequestDetailDto detail = details.get(i);
+//                    MultipartFile file = vcService.findMultipartFileByName(files, detail.getLocalFileName());
+//
+//                    if (file != null) {
+//                        LOGGER.info("매핑 중 - Detail localFileName: " + detail.getLocalFileName() + ", 파일명: " + file.getOriginalFilename());
+//                        detail.setSourceAudio(file);
+//                    }
+//                }
+//            }
 
-                    if (file != null) {
-                        LOGGER.info("매핑 중 - Detail localFileName: " + detail.getLocalFileName() + ", 파일명: " + file.getOriginalFilename());
-                        detail.setSourceAudio(file);
+            // 파일이 있는 경우에만 매핑 로직 수행
+            if (files != null && !files.isEmpty()) {
+                // 업로드된 파일을 맵으로 변환 (파일명 기준)
+                Map<String, MultipartFile> fileMap = files.stream()
+                        .collect(Collectors.toMap(MultipartFile::getOriginalFilename, file -> file));
+
+                // 요청 DTO의 각 상세 항목에 업로드된 파일 매핑
+                for (ConcatRequestDetailDto detail : details) {
+                    String localFileName = detail.getLocalFileName();
+
+                    if (localFileName != null && !localFileName.isEmpty()) {
+                        MultipartFile file = fileMap.get(localFileName);
+
+                        if (file != null) {
+                            LOGGER.info("매핑 중 - Detail localFileName: " + localFileName + ", 파일명: " + file.getOriginalFilename());
+                            detail.setSourceAudio(file);
+                        } else {
+                            LOGGER.warning("업로드된 파일에서 localFileName과 일치하는 파일을 찾을 수 없습니다: " + localFileName);
+                            // 필요한 경우 예외 처리 추가
+                        }
+                    } else {
+                        LOGGER.info("localFileName이 없으므로 S3에 있는 파일로 처리합니다. Detail ID: " + detail.getId());
+                        // 아무 것도 하지 않음
                     }
                 }
             }
