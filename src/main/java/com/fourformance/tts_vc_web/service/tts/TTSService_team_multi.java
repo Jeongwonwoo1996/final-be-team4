@@ -215,9 +215,15 @@ public class TTSService_team_multi {
 
     // ttsDetail 업데이트 메서드
     private void processTTSDetail(TTSSaveDetailDto detailDto, TTSProject ttsProject) {
+        VoiceStyle detailStyle;
 
-        VoiceStyle detailStyle = em.merge(voiceStyleRepository.findById(detailDto.getUnitVoiceStyleId())
-                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_EXISTS_PROJECT)));
+        if (detailDto.getUnitVoiceStyleId() != null){
+            detailStyle = em.merge(voiceStyleRepository.findById(detailDto.getUnitVoiceStyleId())
+                    .orElseThrow(() -> new BusinessException(ErrorCode.VOICE_STYLE_NOT_FOUND_EXCEPTION)));
+        }else {
+            detailStyle = null;
+        }
+
 
         if (detailDto.getId() != null) {
             // 기존 TTSDetail 업데이트
