@@ -25,7 +25,9 @@ public class TaskHistory extends BaseEntity {
     @JoinColumn(name = "task_id")
     private Task task;
 
+    @Enumerated(EnumType.STRING)
     private TaskStatusConst oldStatus;
+    @Enumerated(EnumType.STRING)
     private TaskStatusConst newStatus;
     private String mod_msg;
     private LocalDateTime created_at;

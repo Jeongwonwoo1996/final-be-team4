@@ -15,6 +15,7 @@ import java.time.LocalDateTime;
 @ToString
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Table(name = "task")
 public class Task extends BaseEntity {
 
     @Id
@@ -22,7 +23,7 @@ public class Task extends BaseEntity {
     @Column(name = "task_id")
     private Long id;
 
-    @OneToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "project_id")
     private Project project;
 
@@ -32,7 +33,8 @@ public class Task extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private TaskStatusConst taskStatusConst = TaskStatusConst.NEW;
 
-    private String taskData;
+    @Column(name = "task_data", columnDefinition = "JSON")
+    private String taskData; //작업(Task)을 실행하는 데 필요한 구체적인 데이터
     private String trackingId;
     private String resultMsg;
 

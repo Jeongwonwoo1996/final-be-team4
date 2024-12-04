@@ -6,6 +6,7 @@ import com.fourformance.tts_vc_web.dto.response.DataResponseDto;
 import com.fourformance.tts_vc_web.dto.response.ResponseDto;
 import com.fourformance.tts_vc_web.dto.vc.VCDetailResDto;
 import com.fourformance.tts_vc_web.dto.vc.VCSaveRequestDto;
+import com.fourformance.tts_vc_web.service.vc.VCService_TaskJob;
 import com.fourformance.tts_vc_web.service.vc.VCService_team_api;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -36,6 +37,7 @@ public class VCController_team_api {
 
     private static final Logger LOGGER = Logger.getLogger(VCController_team_api.class.getName());
     private final VCService_team_api vcService;
+    private final VCService_TaskJob vcServiceTask;
 
     /**
      * VC 프로젝트 처리 엔드포인트
@@ -54,7 +56,6 @@ public class VCController_team_api {
             @RequestPart("VCSaveRequestDto") VCSaveRequestDto VCSaveRequestDto,
             @RequestPart("files") List<MultipartFile> files,
             HttpSession session) {
-        LOGGER.info("VC 프로젝트 처리 요청 시작");
 
         // 세션에 memberId 값이 설정되지 않았다면 예외 처리
         if (session.getAttribute("memberId") == null) {
@@ -67,22 +68,9 @@ public class VCController_team_api {
         // 요청 데이터 유효성 검사
         validateRequestData(VCSaveRequestDto);
 
-        try {
-            // VC 프로젝트 처리
-            List<VCDetailResDto> response = vcService.processVCProject(VCSaveRequestDto, files, memberId);
+        vcServiceTask.enqueueVCTasks(VCSaveRequestDto, files, memberId);
 
-            LOGGER.info("VC 프로젝트 처리 성공");
-            return DataResponseDto.of(response);
-
-        } catch (BusinessException e) {
-            // 비즈니스 로직 예외 처리
-            LOGGER.log(Level.WARNING, "비즈니스 예외 발생", e);
-            throw e;
-        } catch (Exception e) {
-            // 시스템 예외 처리
-            LOGGER.log(Level.SEVERE, "VC 프로젝트 처리 중 시스템 예외 발생", e);
-            throw new BusinessException(ErrorCode.INTERNAL_SERVER_VC_ERROR);
-        }
+        return DataResponseDto.of("vc 작업이 큐에 추가되었습니다.");
     }
 
     /**
@@ -93,13 +81,10 @@ public class VCController_team_api {
      */
     private void validateRequestData(VCSaveRequestDto vcSaveRequestDto) {
         if (vcSaveRequestDto == null) {
-            LOGGER.warning("요청 데이터가 null입니다.");
             throw new BusinessException(ErrorCode.INVALID_REQUEST_DATA);
         }
         if (vcSaveRequestDto.getTrgFiles() == null || vcSaveRequestDto.getTrgFiles().isEmpty()) {
-            LOGGER.warning("요청 데이터에 타겟 오디오 파일이 없습니다.");
             throw new BusinessException(ErrorCode.INVALID_REQUEST_FILE_DATA);
         }
-        LOGGER.info("요청 데이터 유효성 검사 통과");
     }
 }
