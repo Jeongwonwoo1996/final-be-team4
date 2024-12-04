@@ -153,6 +153,11 @@ public class VCViewController_team_multi {
     @DeleteMapping("/delete/details")
     public ResponseDto deleteVCDetail(@RequestBody DeleteReqDto vcDeleteDto) {
 
+        // 프로젝트 ID 체크
+        if (vcDeleteDto.getProjectId() == null) {
+            throw new BusinessException(ErrorCode.INVALID_PROJECT_ID);
+        }
+
         // VC 선택된 항목 삭제
         if (vcDeleteDto.getDetailIds() != null) {
             projectService.deleteVCDetail(vcDeleteDto.getDetailIds());
@@ -161,12 +166,12 @@ public class VCViewController_team_multi {
         // 선택된 오디오 삭제
         if (vcDeleteDto.getAudioIds() != null) {
             projectService.deleteAudioIds(vcDeleteDto.getAudioIds());
-        }
-        for (Long metaId : vcDeleteDto.getAudioIds()) {
-            s3Service.deleteAudioOutput(metaId);
-        }
 
-        // 작업 상태 : Terminated(종료) - 코드 추가 예정
+            for (Long metaId : vcDeleteDto.getAudioIds()) {
+                s3Service.deleteAudioOutput(metaId);
+            }
+
+        }
 
         return DataResponseDto.of("", "선택된 모든 항목이 정상적으로 삭제되었습니다.");
     }
