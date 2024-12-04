@@ -68,8 +68,6 @@ public class TTSViewController_team_multi {
     @PostMapping("/save")
     public ResponseDto ttsSave(@RequestBody TTSSaveDto ttsSaveDto, HttpSession session) {
         try {
-            // 임시 하드 코딩
-//            session.setAttribute("memberId", 1L);
             // 세션에 memberId 설정
             if (session.getAttribute("memberId") == null) {
                 throw new BusinessException(ErrorCode.MEMBER_NOT_FOUND);
@@ -91,8 +89,6 @@ public class TTSViewController_team_multi {
 
         } catch (BusinessException e) {
             throw e;  // 기존의 BusinessException 그대로 던짐
-        } catch (Exception e) {
-            throw new BusinessException(ErrorCode.SERVER_ERROR);  // 일반 예외를 서버 에러로 처리
         }
     }
 
