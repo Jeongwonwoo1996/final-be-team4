@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -56,7 +57,7 @@ public class TTSService_team_multi {
         List<TTSDetail> ttsDetails = ttsDetailRepository.findByTtsProject_Id(projectId);
 
         // 생성된 오디오 추가하기
-        
+
         // isDeleted가 false인 경우에만 TTSDetailDTO 목록으로 변환
         return ttsDetails.stream()
                 .filter(detail -> !detail.getIsDeleted()) // 삭제되지 않은 항목만 필터링
@@ -69,8 +70,12 @@ public class TTSService_team_multi {
                             .map(meta -> new GeneratedAudioDto(meta.getId(), meta.getAudioUrl()))
                             .toList();
 
+                    Long unitVoiceId = detail.getVoiceStyle() == null ? null : detail.getVoiceStyle().getId();
+
+
                     // TTSDetailDto 생성 및 GeneratedAudioDto 추가
                     TTSDetailDto ttsDetailDto = TTSDetailDto.createTTSDetailDto(detail);
+                    ttsDetailDto.setUnitVoiceStyleId(unitVoiceId);
                     ttsDetailDto.setGenAudios(generatedAudioDtos);
                     return ttsDetailDto;
                 })
@@ -215,9 +220,15 @@ public class TTSService_team_multi {
 
     // ttsDetail 업데이트 메서드
     private void processTTSDetail(TTSSaveDetailDto detailDto, TTSProject ttsProject) {
+        VoiceStyle detailStyle;
 
-        VoiceStyle detailStyle = em.merge(voiceStyleRepository.findById(detailDto.getUnitVoiceStyleId())
-                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_EXISTS_PROJECT)));
+        if (detailDto.getUnitVoiceStyleId() != null){
+            detailStyle = em.merge(voiceStyleRepository.findById(detailDto.getUnitVoiceStyleId())
+                    .orElseThrow(() -> new BusinessException(ErrorCode.VOICE_STYLE_NOT_FOUND_EXCEPTION)));
+        }else {
+            detailStyle = null;
+        }
+
 
         if (detailDto.getId() != null) {
             // 기존 TTSDetail 업데이트
