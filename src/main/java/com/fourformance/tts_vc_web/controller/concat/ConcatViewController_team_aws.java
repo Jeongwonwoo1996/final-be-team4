@@ -29,38 +29,8 @@ import org.springframework.web.multipart.MultipartFile;
 @RequestMapping("/concat")
 public class ConcatViewController_team_aws {
 
-    private final ConcatService_team_aws concatService;
     private final ProjectService_team_aws projectService;
-    private final MemberRepository memberRepository;
     private final S3Service s3Service;
-
-
-    // Concat 상태 저장 메서드
-    @Operation(
-            summary = "Concat 상태 저장",
-            description = "Concat 프로젝트 상태를 저장합니다.")
-    @PostMapping(value = "/save", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseDto concatSave(
-            @RequestPart(value = "concatSaveDto") ConcatSaveDto concatSaveDto, // 반드시 "concatSaveDto" 이름 지정
-            @RequestPart(value = "file", required = false) List<MultipartFile> files,
-            HttpSession session) {
-
-        session.setAttribute("memberId",1L);
-
-        if (session.getAttribute("memberId") == null) {
-            throw new BusinessException(ErrorCode.MEMBER_NOT_FOUND);
-        }
-
-        Long memberId = (Long) session.getAttribute("memberId");
-
-        // Member 객체 조회
-        Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new IllegalStateException("Member not found"));
-
-        Long projectId = concatService.saveConcatProject(concatSaveDto, files, member);
-
-        return DataResponseDto.of(projectId, "Concat 상태가 성공적으로 저장되었습니다.");
-    }
 
 
     // Concat 프로젝트 삭제
@@ -98,11 +68,11 @@ public class ConcatViewController_team_aws {
         // 선택된 오디오 삭제
         if (deleteDto.getAudioIds() != null) {
             projectService.deleteAudioIds(deleteDto.getAudioIds());
-        }
 
-        // 버킷에서 오디오 파일 삭제
-        for (Long audioId : deleteDto.getAudioIds()) {
-            s3Service.deleteAudioMember(audioId);
+            // 버킷에서 오디오 파일 삭제
+            for (Long audioId : deleteDto.getAudioIds()) {
+                s3Service.deleteAudioMember(audioId);
+            }
         }
 
         return DataResponseDto.of("", "선택된 모든 항목이 정상적으로 삭제되었습니다.");

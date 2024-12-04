@@ -67,34 +67,24 @@ public class TTSViewController_team_multi {
             description = "TTS 프로젝트 상태를 저장합니다.")
     @PostMapping("/save")
     public ResponseDto ttsSave(@RequestBody TTSSaveDto ttsSaveDto, HttpSession session) {
+
+        // 세션에 memberId 설정
+        if (session.getAttribute("memberId") == null) {
+            throw new BusinessException(ErrorCode.MEMBER_NOT_FOUND);
+        }
+
+        Long memberId = (Long) session.getAttribute("memberId");
         try {
-            // 임시 하드 코딩
-//            session.setAttribute("memberId", 1L);
-            // 세션에 memberId 설정
-            if (session.getAttribute("memberId") == null) {
-                throw new BusinessException(ErrorCode.MEMBER_NOT_FOUND);
-            }
 
-            Long memberId = (Long) session.getAttribute("memberId");
+            Long projectId = ttsService.saveTTSProject(ttsSaveDto, memberId);
 
-            Long projectId;
-            if (ttsSaveDto.getProjectId() == null) {
-                // projectId가 null인 경우, 새 프로젝트 생성
-                projectId = ttsService.createNewProject(ttsSaveDto, memberId);
-            } else {
-                // projectId가 존재하면, 기존 프로젝트 업데이트
-                projectId = ttsService.updateProject(ttsSaveDto, memberId);
-            }
             // 상태 저장 후 결과 반환
             ResponseDto ttsLoadDto = ttsLoad(projectId);
             return DataResponseDto.of(ttsLoadDto, "TTS 프로젝트가 성공적으로 저장되었습니다.");
 
-        } catch (BusinessException e) {
-            throw e;  // 기존의 BusinessException 그대로 던짐
+        } catch (Exception e) {
+            throw new BusinessException(ErrorCode.SERVER_ERROR);
         }
-//        catch (Exception e) {
-//            throw new BusinessException(ErrorCode.SERVER_ERROR);  // 일반 예외를 서버 에러로 처리
-//        }
     }
 
     // TTS 프로젝트 삭제
