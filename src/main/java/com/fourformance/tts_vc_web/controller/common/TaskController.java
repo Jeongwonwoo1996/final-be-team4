@@ -51,8 +51,17 @@ public class TaskController {
             summary = "작업 초기화",
             description = "지금까지 걸어놓은 모든 작업 현황을 삭제합니다." )
     @DeleteMapping("/clear")
-    public ResponseDto clear(){
-        return DataResponseDto.of("");
+    public ResponseDto clear(HttpSession session){
+
+        // memberId 세션에서 가져오기
+        if (session.getAttribute("memberId") == null) {
+            throw new BusinessException(ErrorCode.MEMBER_NOT_FOUND);
+        }
+        Long memberId = (Long) session.getAttribute("memberId");
+
+        taskService.terminatePendingTasks(memberId);
+
+        return DataResponseDto.of("","작업 초기화 성공");
     }
 
     @Operation(

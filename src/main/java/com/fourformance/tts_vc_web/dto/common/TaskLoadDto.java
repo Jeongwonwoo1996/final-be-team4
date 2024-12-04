@@ -13,7 +13,6 @@ import org.modelmapper.config.Configuration;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@RequiredArgsConstructor
 public class TaskLoadDto {
     private Long id;
     private Long projectId;
