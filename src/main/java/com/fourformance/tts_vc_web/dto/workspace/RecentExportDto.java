@@ -6,7 +6,8 @@ import lombok.Data;
 
 @Data
 public class RecentExportDto {
-    private Long MetaId; // 이거 outputAudioMeta id
+    private Long MetaId; //  outputAudioMeta id
+    private Long projectId; //  project id
     private String projectName; // 프로젝트 이름
     private ProjectType projectType;
     private String script;// 파이어프레임의 내용에는 VC/TTSDetail의 script가 들어감.
