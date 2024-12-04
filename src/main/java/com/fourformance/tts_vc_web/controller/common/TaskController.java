@@ -44,7 +44,7 @@ public class TaskController {
 
         List<TaskLoadDto> taskLoadDtos = taskService.getTasksByMemberAndConditions(memberId);
 
-        return DataResponseDto.of(taskLoadDtos, "작업 목록");
+        return DataResponseDto.of(taskLoadDtos, "작업 목록 로드 성공");
     }
 
     @Operation(
