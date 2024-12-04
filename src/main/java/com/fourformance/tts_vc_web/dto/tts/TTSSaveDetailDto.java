@@ -1,5 +1,6 @@
 package com.fourformance.tts_vc_web.dto.tts;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -9,6 +10,7 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class TTSSaveDetailDto {
     private Long id; // 상세 정보 ID
     private String unitScript; // 단위 스크립트

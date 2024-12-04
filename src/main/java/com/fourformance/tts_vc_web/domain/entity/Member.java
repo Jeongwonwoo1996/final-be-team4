@@ -6,14 +6,12 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import java.time.LocalDateTime;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
-
-import java.time.LocalDateTime;
 
 @Getter
 @ToString
@@ -27,6 +25,7 @@ public class Member extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(unique = true)
     private String email;
     private String pwd;
     private String name;
@@ -93,9 +92,6 @@ public class Member extends BaseEntity {
         this.pwd = pwd;
         this.updatedAt = LocalDateTime.now();
     }
-
-
-
 
 
 }
