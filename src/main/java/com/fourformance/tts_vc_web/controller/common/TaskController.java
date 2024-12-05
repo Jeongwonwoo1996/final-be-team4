@@ -79,7 +79,7 @@ public class TaskController {
     }
 
 
-    @PostMapping("/tts/convert")
+    @PostMapping("/convert/tts")
     public ResponseDto convertBatchTexts(
             @RequestBody TTSRequestDto ttsRequestDto,
             HttpSession session) {
@@ -98,7 +98,7 @@ public class TaskController {
     }
 
 
-    @PostMapping(value = "/vc/convert", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = "/convert/vc", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseDto processVCProject(
             @RequestPart("VCSaveRequestDto") VCSaveRequestDto vcSaveRequestDto,
             @RequestPart("files") List<MultipartFile> files,
@@ -122,7 +122,7 @@ public class TaskController {
     }
 
     @PostMapping(
-            value = "/concat/convert",
+            value = "/convert/concat",
             consumes = {MediaType.MULTIPART_FORM_DATA_VALUE}
     )
     public ResponseDto convertMultipleAudios(

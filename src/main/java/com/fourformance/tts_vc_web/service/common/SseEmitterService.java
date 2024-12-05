@@ -17,7 +17,6 @@ public class SseEmitterService {
 
     private static final Long DEFAULT_TIMEOUT = 30 * 60 * 1000L; // 30분
     private final EmitterRepository emitterRepository; // Emitter 저장소 인터페이스
-    private final ProjectRepository projectRepository; // projectId로 memberId를 찾기 위한 Repository
     private final Logger log = Logger.getLogger(SseEmitterService.class.getName());
 
     /**
@@ -51,6 +50,10 @@ public class SseEmitterService {
             log.info("SSE Emitter timed out for clientId: " + clientId);
             emitterRepository.deleteById(clientId);
         });
+        emitter.onError(e -> {
+            log.warning("Error in SSE Emitter for clientId: " + clientId + ", removing emitter.");
+            emitterRepository.deleteById(clientId);
+        });
 
         return emitter;
     }
@@ -80,5 +83,32 @@ public class SseEmitterService {
         } else {
             log.warning("No active SSE connection for memberId: " + memberId);
         }
+    }
+
+    /**
+     * 특정 클라이언트 연결 강제 종료
+     */
+    public void disconnect(Long clientId) {
+        SseEmitter emitter = emitterRepository.get(clientId);
+        if (emitter != null) {
+            emitter.complete();
+            emitterRepository.deleteById(clientId);
+            log.info("Disconnected clientId: " + clientId);
+        }
+    }
+
+    /**
+     * 모든 클라이언트 연결 강제 종료
+     */
+    public void disconnectAll() {
+        emitterRepository.deleteAll();
+        log.info("All SSE connections have been disconnected");
+    }
+
+    /**
+     * 현재 활성화된 연결 수 반환
+     */
+    public int getActiveConnectionsCount() {
+        return emitterRepository.count();
     }
 }

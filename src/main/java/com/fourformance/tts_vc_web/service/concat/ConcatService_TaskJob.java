@@ -23,6 +23,8 @@ import net.bramp.ffmpeg.FFprobe;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -91,57 +93,57 @@ public class ConcatService_TaskJob {
         setupFFmpeg();
     }
 
-    @Transactional
-    public void enqueueConcatTask(ConcatRequestDto concatReqDto, List<MultipartFile> files, Long memberId){
-
-        // 1. 유효성 검증: 요청 데이터 및 상세 데이터 확인
-        if (concatReqDto == null ||
-                concatReqDto.getConcatRequestDetails() == null ||
-                concatReqDto.getConcatRequestDetails().isEmpty()) {
-            throw new BusinessException(ErrorCode.INVALID_REQUEST_DATA); // 커스텀 예외 발생
-        }
-
-        // 2. 파일 수와 요청 DTO의 상세 정보 수가 동일한지 확인
-        List<ConcatRequestDetailDto> details = concatReqDto.getConcatRequestDetails();
-        if (details.size() != files.size()) {
-            throw new BusinessException(ErrorCode.INVALID_REQUEST_DATA);
-        }
-
-        // 3. 요청 DTO의 각 상세 항목에 업로드된 파일 매핑
-        for (int i = 0; i < details.size(); i++) {
-            ConcatRequestDetailDto detail = details.get(i);
-            MultipartFile file = vcService.findMultipartFileByName(files, detail.getLocalFileName());
-
-            detail.setSourceAudio(file);
-        }
-
-        // 프로젝트 저장
-        ConcatProject concatProject = saveOrUpdateProject(concatReqDto, memberId);
-
-        // 디테일 저장
-        for (ConcatRequestDetailDto detail : details) {
-            MemberAudioMeta memberAudioMeta = uploadConcatDetailSourceAudio(detail, concatProject);
-            saveOrUpdateDetail(detail, concatProject,memberAudioMeta);
-        }
-
-        // 프로젝트 ID로 연관된 concat 디테일 조회
-        List<ConcatDetail> concatDetails = concatDetailRepository.findByConcatProject_Id(concatProject.getId());
-
-        // 6. ConcatProject와 ConcatDetail 객체를 ConcatMsgDto로 변환
-        ConcatMsgDto msgDto = createConcatMsgDto(concatProject, concatDetails, memberId);
-        System.out.println("===========================================msgDto.toString() = " + msgDto.toString());
-
-        // 문자열 json으로 변환
-        String taskData = convertToJson(msgDto);
-
-        // Task 생성 및 저장
-        Task task = Task.createTask(concatProject, ProjectType.CONCAT, taskData);
-        taskRepository.save(task);
-
-        // 메시지 생성 및 RabbitMQ에 전송
-        msgDto.setTaskId(task.getId());
-        taskProducer.sendTask("AUDIO_CONCAT", msgDto);
-    }
+//    @Transactional(isolation = Isolation.SERIALIZABLE, propagation = Propagation.REQUIRED)
+//    public void enqueueConcatTask(ConcatRequestDto concatReqDto, List<MultipartFile> files, Long memberId){
+//
+//        // 1. 유효성 검증: 요청 데이터 및 상세 데이터 확인
+//        if (concatReqDto == null ||
+//                concatReqDto.getConcatRequestDetails() == null ||
+//                concatReqDto.getConcatRequestDetails().isEmpty()) {
+//            throw new BusinessException(ErrorCode.INVALID_REQUEST_DATA); // 커스텀 예외 발생
+//        }
+//
+//        // 2. 파일 수와 요청 DTO의 상세 정보 수가 동일한지 확인
+//        List<ConcatRequestDetailDto> details = concatReqDto.getConcatRequestDetails();
+//        if (details.size() != files.size()) {
+//            throw new BusinessException(ErrorCode.INVALID_REQUEST_DATA);
+//        }
+//
+//        // 3. 요청 DTO의 각 상세 항목에 업로드된 파일 매핑
+//        for (int i = 0; i < details.size(); i++) {
+//            ConcatRequestDetailDto detail = details.get(i);
+//            MultipartFile file = vcService.findMultipartFileByName(files, detail.getLocalFileName());
+//
+//            detail.setSourceAudio(file);
+//        }
+//
+//        // 프로젝트 저장
+//        ConcatProject concatProject = saveOrUpdateProject(concatReqDto, memberId);
+//
+//        // 디테일 저장
+//        for (ConcatRequestDetailDto detail : details) {
+//            MemberAudioMeta memberAudioMeta = uploadConcatDetailSourceAudio(detail, concatProject);
+//            saveOrUpdateDetail(detail, concatProject,memberAudioMeta);
+//        }
+//
+//        // 프로젝트 ID로 연관된 concat 디테일 조회
+//        List<ConcatDetail> concatDetails = concatDetailRepository.findByConcatProject_Id(concatProject.getId());
+//
+//        // 6. ConcatProject와 ConcatDetail 객체를 ConcatMsgDto로 변환
+//        ConcatMsgDto msgDto = createConcatMsgDto(concatProject, concatDetails, memberId);
+//        System.out.println("===========================================msgDto.toString() = " + msgDto.toString());
+//
+//        // 문자열 json으로 변환
+//        String taskData = convertToJson(msgDto);
+//
+//        // Task 생성 및 저장
+//        Task task = Task.createTask(concatProject, ProjectType.CONCAT, taskData);
+//        taskRepository.save(task);
+//
+//        // 메시지 생성 및 RabbitMQ에 전송
+//        msgDto.setTaskId(task.getId());
+//        taskProducer.sendTask("AUDIO_CONCAT", msgDto);
+//    }
 
     private String convertToJson(ConcatMsgDto msgDto) {
         try {
@@ -469,4 +471,58 @@ public class ConcatService_TaskJob {
         ConcatStatusHistory concatStatusHistory = ConcatStatusHistory.createConcatStatusHistory(concatProject, status);
         concatStatusHistoryRepository.save(concatStatusHistory);
     }
+
+    //---------------------------------------------------------------------
+    @Transactional(isolation = Isolation.SERIALIZABLE, propagation = Propagation.REQUIRED)
+    public void enqueueConcatTask(ConcatRequestDto concatReqDto, List<MultipartFile> files, Long memberId) {
+        validateRequest(concatReqDto, files);
+
+        // 프로젝트 생성 또는 업데이트
+        ConcatProject concatProject = saveOrUpdateProject(concatReqDto, memberId);
+
+        // 디테일 저장 및 소스 오디오 업로드
+        processDetails(concatReqDto, files, concatProject);
+
+        // Task 생성 및 메시지 큐 전송
+        enqueueConcatTaskMessage(concatProject, memberId);
+    }
+
+    private void validateRequest(ConcatRequestDto concatReqDto, List<MultipartFile> files) {
+        if (concatReqDto == null || concatReqDto.getConcatRequestDetails() == null || concatReqDto.getConcatRequestDetails().isEmpty()) {
+            throw new BusinessException(ErrorCode.INVALID_REQUEST_DATA);
+        }
+        if (concatReqDto.getConcatRequestDetails().size() != files.size()) {
+            throw new BusinessException(ErrorCode.INVALID_REQUEST_DATA);
+        }
+    }
+
+    private void processDetails(ConcatRequestDto concatReqDto, List<MultipartFile> files, ConcatProject concatProject) {
+        List<ConcatRequestDetailDto> details = concatReqDto.getConcatRequestDetails();
+
+        for (int i = 0; i < details.size(); i++) {
+            ConcatRequestDetailDto detail = details.get(i);
+            MultipartFile file = vcService.findMultipartFileByName(files, detail.getLocalFileName());
+
+            detail.setSourceAudio(file); // 파일 매핑
+            MemberAudioMeta memberAudioMeta = uploadConcatDetailSourceAudio(detail, concatProject); // 소스 오디오 업로드
+            saveOrUpdateDetail(detail, concatProject, memberAudioMeta); // 디테일 저장 또는 업데이트
+        }
+    }
+
+    private void enqueueConcatTaskMessage(ConcatProject concatProject, Long memberId) {
+        List<ConcatDetail> concatDetails = concatDetailRepository.findByConcatProject_Id(concatProject.getId());
+
+        // ConcatMsgDto 생성
+        ConcatMsgDto msgDto = createConcatMsgDto(concatProject, concatDetails, memberId);
+        String taskData = convertToJson(msgDto);
+
+        // Task 생성 및 저장
+        Task task = Task.createTask(concatProject, ProjectType.CONCAT, taskData);
+        taskRepository.save(task);
+
+        // RabbitMQ로 메시지 전송
+        msgDto.setTaskId(task.getId());
+        taskProducer.sendTask("AUDIO_CONCAT", msgDto);
+    }
+
 }
