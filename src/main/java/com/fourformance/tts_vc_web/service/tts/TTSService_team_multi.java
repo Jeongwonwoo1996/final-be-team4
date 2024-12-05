@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -56,7 +57,7 @@ public class TTSService_team_multi {
         List<TTSDetail> ttsDetails = ttsDetailRepository.findByTtsProject_Id(projectId);
 
         // 생성된 오디오 추가하기
-        
+
         // isDeleted가 false인 경우에만 TTSDetailDTO 목록으로 변환
         return ttsDetails.stream()
                 .filter(detail -> !detail.getIsDeleted()) // 삭제되지 않은 항목만 필터링
@@ -69,12 +70,26 @@ public class TTSService_team_multi {
                             .map(meta -> new GeneratedAudioDto(meta.getId(), meta.getAudioUrl()))
                             .toList();
 
+                    Long unitVoiceId = detail.getVoiceStyle() == null ? null : detail.getVoiceStyle().getId();
+
+
                     // TTSDetailDto 생성 및 GeneratedAudioDto 추가
                     TTSDetailDto ttsDetailDto = TTSDetailDto.createTTSDetailDto(detail);
+                    ttsDetailDto.setUnitVoiceStyleId(unitVoiceId);
                     ttsDetailDto.setGenAudios(generatedAudioDtos);
                     return ttsDetailDto;
                 })
                 .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public Long saveTTSProject(TTSSaveDto dto, Long memberId){
+
+        Long projectId = dto.getProjectId() == null
+                ? createNewProject(dto, memberId)
+                : updateProject(dto, memberId);
+
+        return projectId;
     }
 
 
@@ -164,7 +179,7 @@ public class TTSService_team_multi {
         if (dto.getTtsDetails() != null) {
             for (TTSSaveDetailDto detailDto : dto.getTtsDetails()) {
                 // ttsDetail 업데이트 메서드 호출
-                processTTSDetail(detailDto, ttsProject);
+                updateTTSDetail(detailDto, ttsProject);
             }
         }
         return ttsProject.getId();
@@ -195,8 +210,6 @@ public class TTSService_team_multi {
         if (detailDto.getUnitVoiceStyleId() != null) {
             detailStyleId = em.merge(voiceStyleRepository.findById(detailDto.getUnitVoiceStyleId())
                     .orElseThrow(() -> new BusinessException(ErrorCode.NOT_EXISTS_VOICESTYLE)));
-//            voiceStyle = voiceStyleRepository.findById(detailDto.getUnitVoiceStyleId())
-//                    .orElseThrow(() -> new BusinessException(ErrorCode.NOT_EXISTS_VOICESTYLE));
         }
 
 
@@ -205,7 +218,7 @@ public class TTSService_team_multi {
                 detailDto.getUnitScript(),
                 detailDto.getUnitSequence()
         );
-//        processTTSDetail(detailDto, ttsProject);
+
         ttsDetail.updateTTSDetail(
                 detailStyleId,
                 detailDto.getUnitScript(),
@@ -220,13 +233,14 @@ public class TTSService_team_multi {
     }
 
     // ttsDetail 업데이트 메서드
-    private void processTTSDetail(TTSSaveDetailDto detailDto, TTSProject ttsProject) {
-        VoiceStyle detaolStyle = null;
+    private void updateTTSDetail(TTSSaveDetailDto detailDto, TTSProject ttsProject) {
+        VoiceStyle detailStyle;
 
-        // voiceStyleId가 null이 아닌 경우에만 조회 ( voiceStyleId에 null을 허용한다는 의미입니다. 보이스 스타일을 지정하지 않고 저장할 수 있으니까 )
-        if (detailDto.getUnitVoiceStyleId() != null) {
-            detaolStyle = em.merge(voiceStyleRepository.findById(detailDto.getUnitVoiceStyleId())
-                    .orElseThrow(() -> new BusinessException(ErrorCode.NOT_EXISTS_VOICESTYLE)));
+        if (detailDto.getUnitVoiceStyleId() != null){
+            detailStyle = em.merge(voiceStyleRepository.findById(detailDto.getUnitVoiceStyleId())
+                    .orElseThrow(() -> new BusinessException(ErrorCode.VOICE_STYLE_NOT_FOUND_EXCEPTION)));
+        }else {
+            detailStyle = null;
         }
 
         if (detailDto.getId() != null) {
@@ -239,7 +253,7 @@ public class TTSService_team_multi {
             }
 
             ttsDetail.updateTTSDetail(
-                    detaolStyle,
+                    detailStyle,
                     detailDto.getUnitScript(),
                     detailDto.getUnitSpeed(),
                     detailDto.getUnitPitch(),

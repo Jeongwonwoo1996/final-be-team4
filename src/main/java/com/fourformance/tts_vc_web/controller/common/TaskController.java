@@ -67,9 +67,10 @@ public class TaskController {
     @Operation(
             summary = "실패 작업 재실행 버튼",
             description = "실패한 작업을 재실행합니다." )
-    @PostMapping("/restart")
+    @GetMapping("/restart")
     public ResponseDto restart(){
-        return DataResponseDto.of("");
+        int restartedCount = taskService.restartFailedTasks();
+        return DataResponseDto.of("총 " + restartedCount + "개의 실패 작업이 재실행되었습니다.");
     }
 
 }

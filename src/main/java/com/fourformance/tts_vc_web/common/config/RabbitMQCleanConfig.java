@@ -16,10 +16,10 @@ public class RabbitMQCleanConfig {
     @PostConstruct
     public void deleteQueues() {
         // 큐 삭제
-//        amqpAdmin.deleteQueue(TaskConfig.TTS_QUEUE);
-//        amqpAdmin.deleteQueue(TaskConfig.VC_QUEUE);
-//        amqpAdmin.deleteQueue(TaskConfig.CONCAT_QUEUE);
-//        amqpAdmin.deleteQueue(TaskConfig.DEAD_LETTER_QUEUE);
+        amqpAdmin.deleteQueue(TaskConfig.TTS_QUEUE);
+        amqpAdmin.deleteQueue(TaskConfig.VC_QUEUE);
+        amqpAdmin.deleteQueue(TaskConfig.CONCAT_QUEUE);
+        amqpAdmin.deleteQueue(TaskConfig.DEAD_LETTER_QUEUE);
 
         System.out.println("All RabbitMQ queues have been deleted!");
     }

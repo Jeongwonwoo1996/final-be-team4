@@ -391,6 +391,8 @@ public class OutputAudioMetaRepositoryCustomImpl implements OutputAudioMetaRepos
                 .select(
                         Projections.constructor(ExportWithDownloadLinkDto.class,
                                 outputAudioMeta.id,
+                                // projectId: TTS, VC, Concat 중 하나의 프로젝트 ID
+                                ttsProject.id.coalesce(vcProject.id, concatProject.id), // 수정된 부분
                                 Expressions.stringTemplate("SUBSTRING_INDEX({0}, '/', -1)", outputAudioMeta.audioUrl),
                                 outputAudioMeta.audioUrl,
                                 JPAExpressions.select(apiStatus.apiUnitStatusConst.stringValue())
