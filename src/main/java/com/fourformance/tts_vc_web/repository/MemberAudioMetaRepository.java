@@ -115,4 +115,10 @@ public interface MemberAudioMetaRepository extends JpaRepository<MemberAudioMeta
 
     // isDeleted인 memberAudioMeta 찾기 - 의준
     List<MemberAudioMeta> findByIsDeletedTrue();
+
+    @Query("SELECT m.audioUrl FROM MemberAudioMeta m WHERE m.id = :audioMetaId AND m.isDeleted = false AND m.audioType = :audioType AND m.audioUrl IS NOT NULL")
+    String findAudioUrlByAudioMetaId(
+            @Param("audioMetaId") Long audioMetaId,
+            @Param("audioType") AudioType audioType
+    );
 }
