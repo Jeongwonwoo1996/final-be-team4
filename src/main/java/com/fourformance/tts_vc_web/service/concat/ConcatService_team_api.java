@@ -210,19 +210,6 @@ public class ConcatService_team_api {
                 throw new BusinessException(ErrorCode.NO_FILES_TO_MERGE);
             }
 
-//            // 2. S3에서 파일 다운로드 및 침묵 파일 생성
-//            for (ConcatResponseDetailDto detail : filteredDetails) {
-//                if (detail.getAudioUrl() != null) {
-//                    String savedFilePath = s3Service.downloadFileFromS3(detail.getAudioUrl(), uploadDir);
-//                    savedFilePaths.add(savedFilePath);
-//
-//                    String silenceFilePath = audioProcessingService.createSilenceFile(detail.getEndSilence().longValue(), uploadDir);
-//                    if (silenceFilePath != null) silenceFilePaths.add(silenceFilePath);
-//                } else {
-//                    LOGGER.warning("Audio URL이 없습니다. Detail ID: " + detail.getId());
-//                }
-//            }
-
             // 2. S3에서 파일 다운로드 및 무음 파일 생성
             for (ConcatResponseDetailDto detail : filteredDetails) {
                 if (detail.getAudioUrl() != null && !detail.getAudioUrl().isEmpty()) {
