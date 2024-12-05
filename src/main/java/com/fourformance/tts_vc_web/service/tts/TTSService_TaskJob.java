@@ -480,10 +480,13 @@ public class TTSService_TaskJob {
 
             // 디테일 DTO를 JSON으로 변환
             String detailJson = convertDetailToJson(updatedDetailDto);
+            System.out.println("detailJson = " + detailJson);
 
             // Task 생성 및 저장
             Task task = Task.createTask(ttsProject, ProjectType.TTS, detailJson);
             taskRepository.save(task);
+
+            System.out.println("task.getId() = " + task.getId());
 
             // 메시지 생성 및 RabbitMQ에 전송
             TTSMsgDto message = createTTSMsgDto(updatedDetailDto, task.getId());
