@@ -4,6 +4,8 @@ import com.fourformance.tts_vc_web.common.constant.APIUnitStatusConst;
 import com.fourformance.tts_vc_web.common.constant.ProjectType;
 import lombok.Data;
 
+import java.time.LocalDateTime;
+
 @Data
 public class RecentExportDto {
     private Long MetaId; //  outputAudioMeta id
@@ -15,4 +17,5 @@ public class RecentExportDto {
     //    private String bucketRoute;
     private String url; // 다운로드 받는 url
     private APIUnitStatusConst unitStatus;// 각 Detail의 Apistatus를 처리(양방향 매핑일경우)
+    private LocalDateTime createAt;
 }

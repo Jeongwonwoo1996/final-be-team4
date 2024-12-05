@@ -68,5 +68,4 @@ public abstract class Project extends BaseEntity {
         this.deletedAt = null;
     }
 
-
 }

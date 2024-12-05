@@ -142,7 +142,7 @@ public class WorkspaceService {
         }
 
         // 최신 5개의 OutputAudioMeta 레코드 조회
-        List<OutputAudioMeta> recentExports = outputAudioMetaRepository.findTop5ByMemberId(memberId);
+        List<OutputAudioMeta> recentExports = outputAudioMetaRepository.findTop5RecentOutputAudioMetaByMemberId(memberId);
 
         // DTO로 변환
         return recentExports.stream()
@@ -158,6 +158,8 @@ public class WorkspaceService {
         dto.setFileName(extractFileName(meta.getBucketRoute())); // 파일명 추출
         dto.setUrl(s3Service.generatePresignedUrl(meta.getBucketRoute())); // S3 Presigned URL 생성
         dto.setUnitStatus(getLatestUnitStatusFromMeta(meta)); // 최신 Unit Status 설정
+        dto.setCreateAt(meta.getCreatedAt()); // 생성일 기준으로 보여줌
+
 
         if (meta.getTtsDetail() != null) {
             // TTS 프로젝트 관련 설정

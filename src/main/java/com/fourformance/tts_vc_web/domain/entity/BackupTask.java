@@ -25,8 +25,12 @@ public class BackupTask extends BaseEntity {
     @JoinColumn(name = "task_id")
     private Task task;
 
+    @Column(columnDefinition = "JSON")
     private String backupData;
+
+    @Enumerated(EnumType.STRING)
     private BackupType backupType;
+
     private LocalDateTime created_at;
 
     private static BackupTask createBackupTask(Task task, String backupData, BackupType backupType){
@@ -37,7 +41,4 @@ public class BackupTask extends BaseEntity {
         backupTask.created_at = LocalDateTime.now();
         return backupTask;
     }
-
-
-
 }
