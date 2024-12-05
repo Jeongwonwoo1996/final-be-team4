@@ -224,8 +224,10 @@ public class VCService_team_api {
             Long memberId) {
 
 
+
         String convertedFilePath = null;
         File convertedFile = null;
+
 
 
 
@@ -243,6 +245,7 @@ public class VCService_team_api {
 
 
 
+
             // Step 3: 변환된 파일 읽기 및 S3 저장
             convertedFile = new File(convertedFilePath);
             byte[] convertedFileBytes = Files.readAllBytes(convertedFile.toPath());
@@ -252,6 +255,7 @@ public class VCService_team_api {
             LOGGER.info("[S3 업로드 완료] URL: " + vcOutputUrl);
 
             // Step 4: 결과 DTO 생성 및 반환
+
 
 
             return new VCDetailResDto(
@@ -269,12 +273,14 @@ public class VCService_team_api {
         } finally {
 
 
+
             // 변환 파일 삭제 로직을 finally 블록에 추가하여 항상 실행되도록 함
             if (convertedFile != null && convertedFile.exists()) {
                 if (!convertedFile.delete()) {
                     LOGGER.warning("변환 파일 삭제 실패: " + convertedFile.getAbsolutePath());
                 } else {
                     LOGGER.info("변환 파일 삭제 성공: " + convertedFilePath);
+
 
 
                 }
