@@ -157,6 +157,7 @@ public class TaskConsumer {
      *
      */
     @RabbitListener(queues = TaskConfig.VC_QUEUE, ackMode = "MANUAL")
+    @Transactional(isolation = Isolation.SERIALIZABLE, propagation = Propagation.REQUIRES_NEW)
     public void handleVCTask(String message, Channel channel, @Header(AmqpHeaders.DELIVERY_TAG) long tag) {
 
         Long projectId = -1L;
@@ -220,6 +221,7 @@ public class TaskConsumer {
      *
      */
     @RabbitListener(queues = TaskConfig.CONCAT_QUEUE, ackMode = "MANUAL")
+    @Transactional(isolation = Isolation.SERIALIZABLE, propagation = Propagation.REQUIRES_NEW)
     public void handleConcatTask(String message, Channel channel, @Header(AmqpHeaders.DELIVERY_TAG) long tag) {
         Long projectId = -1L;
         Long taskId    = -1L;
