@@ -1,5 +1,6 @@
 package com.fourformance.tts_vc_web.repository;
 
+import com.fourformance.tts_vc_web.domain.entity.Project;
 import com.fourformance.tts_vc_web.domain.entity.Task;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -11,11 +12,9 @@ import java.util.Optional;
 
 @Repository
 public interface TaskRepository extends JpaRepository<Task, Long> {
+    
 
-    // 작업 데이터(Json)으로 데이터 찾기 - 승민
-    @Query(value = "SELECT t.id FROM Task t WHERE JSON_EXTRACT(task_data, '$.id') = :id", nativeQuery = true)
-    Long findByNameInJson(@Param("id") Long id);
-
+    // 작업 조회 - 승민
     @Query(value = """
     SELECT DISTINCT t.*
        FROM task t
@@ -27,5 +26,14 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
          );
 """, nativeQuery = true)
     List<Task> findTasksByMemberIdAndConditions(@Param("memberId") Long memberId);
+
+    // 작업 상태가 '완료', '종료' 상태를 제외한 모든 작업 조회 - 승민
+    @Query(value = """
+            SELECT *
+            FROM Task
+            WHERE project_id IN (:projectIdList)
+              AND task_status_const NOT IN ('COMPLETED', 'TERMINATED');
+            """, nativeQuery = true)
+    List<Task> findByStatus(@Param("projectIdList") List<Long> projectIdList);
 
 }
