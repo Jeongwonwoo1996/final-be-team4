@@ -1,6 +1,8 @@
 # 4조 포포먼스(POPOMANCE) 백엔드 팀
 
-> **TTS, VC, Concat 음성 처리 웹 사이트** with AI Park
+> **TTS, VC, Concat 음성 처리 웹 사이트** with AI Park  
+> backend url : http://api.popomance.kr/
+> frontend url : http://dev.popomance.kr/
 
 ## 1. 프로젝트 소개
 
