@@ -52,47 +52,46 @@ public class VCService_team_api {
     /**
      * VC 프로젝트 처리 메서드
      */
-//    public List<VCDetailResDto> processVCProject(VCSaveRequestDto vcSaveRequestDto, List<MultipartFile> files, Long memberId) {
-//        LOGGER.info("[VC 프로젝트 시작]");
-//
-//        // Step 1: 멤버 검증
-//        Member member = memberRepository.findById(memberId)
-//                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
-//
-//        // Step 2: VC 프로젝트 저장 및 ID 반환
-//        Long projectId = vcService.saveVCProject(vcSaveRequestDto, files, member);
-//        if (projectId == null) {
-//            throw new BusinessException(ErrorCode.PROJECT_NOT_FOUND);
-//        }
-//        LOGGER.info("[VC 프로젝트 저장 완료] 프로젝트 ID: " + projectId);
-//
-//        // Step 3: VC 디테일 정보 조회 및 처리
-//        List<VCDetailResDto> vcDetailsRes = processVCDetails(projectId, vcSaveRequestDto, files, memberId);
-//
-//        // Step 4: 프로젝트 상태 업데이트
-//        updateProjectStatus(projectId);
-//        LOGGER.info("[VC 프로젝트 상태 업데이트 완료] 프로젝트 ID: " + projectId);
-//
-//        return vcDetailsRes;
-//    }
     public List<VCDetailResDto> processVCProject(VCSaveRequestDto vcSaveRequestDto, List<MultipartFile> files, Long memberId) {
         LOGGER.info("[VC 프로젝트 시작]");
+
+        // 파일 매핑
         Map<String, MultipartFile> fileMap = createFileMap(files);
 
         vcSaveRequestDto.getSrcFiles().forEach(srcFile -> {
-            String strippedLocalFileName = srcFile.getLocalFileName().substring(srcFile.getLocalFileName().lastIndexOf('/') + 1);
-            MultipartFile sourceAudio = fileMap.get(strippedLocalFileName);
-
-            if (sourceAudio == null) {
-                LOGGER.warning("파일 매핑 실패: " + strippedLocalFileName);
-            } else {
-                srcFile.setSourceAudio(sourceAudio);
-                LOGGER.info("매핑 성공: " + strippedLocalFileName + " -> " + sourceAudio.getOriginalFilename());
+            String strippedLocalFileName = srcFile.getLocalFileName() != null
+                    ? srcFile.getLocalFileName().substring(srcFile.getLocalFileName().lastIndexOf('/') + 1)
+                    : null;
+            if (strippedLocalFileName != null) {
+                MultipartFile sourceAudio = fileMap.get(strippedLocalFileName);
+                if (sourceAudio == null) {
+                    LOGGER.warning("파일 매핑 실패: " + strippedLocalFileName);
+                } else {
+                    srcFile.setSourceAudio(sourceAudio);
+                    LOGGER.info("매핑 성공: " + strippedLocalFileName + " -> " + sourceAudio.getOriginalFilename());
+                }
             }
         });
 
-        LOGGER.info("[VC 프로젝트 완료]");
-        return Collections.emptyList();
+        // Step 1: 멤버 검증
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+
+        // Step 2: VC 프로젝트 저장 및 ID 반환
+        Long projectId = vcService.saveVCProject(vcSaveRequestDto, files, member);
+        if (projectId == null) {
+            throw new BusinessException(ErrorCode.PROJECT_NOT_FOUND);
+        }
+        LOGGER.info("[VC 프로젝트 저장 완료] 프로젝트 ID: " + projectId);
+
+        // Step 3: VC 디테일 정보 조회 및 처리
+        List<VCDetailResDto> vcDetailsRes = processVCDetails(projectId, vcSaveRequestDto, files, memberId);
+
+        // Step 4: 프로젝트 상태 업데이트
+        updateProjectStatus(projectId);
+        LOGGER.info("[VC 프로젝트 상태 업데이트 완료] 프로젝트 ID: " + projectId);
+
+        return vcDetailsRes;
     }
 
     /**
@@ -155,10 +154,11 @@ public class VCService_team_api {
                         String sourceFileUrl = null;
 
                         if (srcFile.getLocalFileName() != null) {
-                            sourceAudio = fileMap.get(srcFile.getLocalFileName());
-                            System.out.println("sourceAudio = " + sourceAudio);
+                            String strippedFileName = srcFile.getLocalFileName().substring(srcFile.getLocalFileName().lastIndexOf('/') + 1);
+                            sourceAudio = fileMap.get(strippedFileName);
+                            LOGGER.info("sourceAudio = " + sourceAudio);
                             if (sourceAudio == null) {
-                                LOGGER.severe("[로컬 파일 누락] 파일명: " + srcFile.getLocalFileName());
+                                LOGGER.severe("[로컬 파일 누락] 파일명: " + strippedFileName);
                                 throw new BusinessException(ErrorCode.FILE_NOT_FOUND);
                             }
                         } else if (srcFile.getMemberAudioMetaId() != null) {
@@ -184,10 +184,10 @@ public class VCService_team_api {
                 .collect(Collectors.toList());
     }
 
-
     /**
      * 단일 소스 파일 변환 처리
      */
+
     private VCDetailResDto processSingleSourceFile(
             VCDetailDto srcFile,
             MultipartFile sourceAudio,
@@ -206,7 +206,7 @@ public class VCService_team_api {
                 String tempFilePath = uploadDir + File.separator + sourceAudio.getOriginalFilename();
                 tempFile = new File(tempFilePath);
                 sourceAudio.transferTo(tempFile);
-                inputFilePath = tempFilePath;
+                inputFilePath = tempFile.getAbsolutePath();
                 LOGGER.info("로컬 소스 오디오 저장 완료: " + inputFilePath);
             } else if (sourceFileUrl != null) {
                 // S3 파일인 경우, 다운로드하여 임시 파일로 저장
@@ -218,10 +218,16 @@ public class VCService_team_api {
             }
 
             // 음성 변환 수행
+            LOGGER.info("Calling convertSpeechToSpeech with voiceId: " + voiceId + ", inputFilePath: " + inputFilePath);
             String convertedFilePath = elevenLabsClient.convertSpeechToSpeech(voiceId, inputFilePath);
+            LOGGER.info("convertSpeechToSpeech completed, convertedFilePath: " + convertedFilePath);
 
             // 변환된 파일을 MultipartFile로 변환
             convertedFile = new File(convertedFilePath);
+            if (!convertedFile.exists()) {
+                LOGGER.severe("변환된 파일이 존재하지 않습니다: " + convertedFilePath);
+                throw new BusinessException(ErrorCode.FILE_NOT_FOUND);
+            }
             MultipartFile convertedMultipartFile = CommonFileUtils.convertFileToMultipartFile(
                     convertedFile, convertedFile.getName());
 
@@ -239,7 +245,7 @@ public class VCService_team_api {
                     List.of(uploadedUrl)
             );
         } catch (Exception e) {
-            LOGGER.severe("소스 파일 처리 실패: " + e.getMessage());
+            LOGGER.info("소스 파일 처리 실패: " + e.getMessage());
             throw new BusinessException(ErrorCode.SERVER_ERROR);
         } finally {
             // 임시 파일 정리
