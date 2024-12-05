@@ -36,6 +36,8 @@ import org.springframework.amqp.support.AmqpHeaders;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Isolation;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
@@ -61,13 +63,14 @@ public class TaskConsumer {
     private final AudioProcessingService audioProcessingService;
     private final S3Service s3Service;
 
-
     /**
      * TTS 작업 처리: 큐에서 작업을 꺼내 TTS 작업 처리
      *
      */
     @RabbitListener(queues = TaskConfig.TTS_QUEUE, ackMode = "MANUAL")
+    @Transactional(isolation = Isolation.SERIALIZABLE, propagation = Propagation.REQUIRES_NEW)
     public void handleTTSTask(String message, Channel channel, @Header(AmqpHeaders.DELIVERY_TAG) long tag) {
+
 
         Long projectId = -1L;
         Long detailId  = -1L;
@@ -82,6 +85,7 @@ public class TaskConsumer {
 
             if(projectId == -1L || detailId == -1L || taskId == -1) { throw new BusinessException(ErrorCode.JSON_PROCESSING_ERROR); }
 
+
             // 상태가 TERMINATED인 작업은 처리하지 않고 ACK 후 종료
             Task task = taskRepository.findById(taskId)
                     .orElseThrow(() -> new BusinessException(ErrorCode.TASK_NOT_FOUND));
@@ -91,10 +95,8 @@ public class TaskConsumer {
                 return;
             }
 
-            System.out.println("taskId = " + taskId);
             // 상태 업데이트
             updateStatus(task.getId(), TaskStatusConst.RUNNABLE, "작업 시작");
-            System.out.println("=============실행됑라라ㅏ랄");
             sseService.sendToClient(projectId, "TTS 작업이 시작되었습니다.");
 
             // TTS 작업
@@ -134,6 +136,9 @@ public class TaskConsumer {
 
         } catch (Exception e) {
 
+            e.printStackTrace();
+            System.out.println("에러나서 작업 실패" );
+
             try { // Dead Letter Queue로 메시지 전달
                 channel.basicNack(tag, false, false);
             } catch (IOException ioException) {
@@ -144,6 +149,7 @@ public class TaskConsumer {
             }
         }
     }
+
 
 
     /**

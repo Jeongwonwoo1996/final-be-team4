@@ -147,7 +147,6 @@ public class VCService_team_multi {
 
         // 3. 소스 파일 처리 (vc detail 처리)
         processSrcFiles(vcSaveDto.getSrcFiles(), localFiles, vcProject);
-//        processFiles(vcSaveDto.getSrcFiles(), localFiles, vcProject, AudioType.VC_SRC);
 
         return vcProject.getId();
     }
@@ -263,12 +262,11 @@ public class VCService_team_multi {
         // src오디오는 중복으로 들어갈 수가 없다 검증 체크
         // detail id도 받고 localfilename도 받아야할까? => 같이 있으면 오디오 중복 검증을 할 수 있다
 
-        if (fileDtos == null || fileDtos.isEmpty()) { // 업로드 된 파일이 없을 때
-            return;
-        }
 
         for (SrcAudioFileDto fileDto : fileDtos) {
+
             MemberAudioMeta audioMeta = null;
+
 
             // detailId가 존재하면 해당 VCDetail을 조회하여 업데이트
             if(fileDto.getDetailId()!=null){
@@ -293,20 +291,26 @@ public class VCService_team_multi {
                             AudioType.VC_SRC
                     );
 
+
                     // 업로드된 파일을 통해 MemberAudioMeta 검색
                     audioMeta = memberAudioMetaRepository.findFirstByAudioUrl(uploadUrl)
                             .orElseThrow(() -> new BusinessException(ErrorCode.NOT_EXISTS_AUDIO));
                     memberAudioMetaRepository.selectAudio(audioMeta.getId(), AudioType.VC_TRG);
                 }
 
+                if (fileDto.getLocalFileName() == null && fileDto.getUnitScript() != null) {
+                    // 소스 파일은 VCDetail에 저장
+                    VCDetail vcDetail = VCDetail.createVCDetail(vcProject, audioMeta);
+                    vcDetail.updateDetails(fileDto.getIsChecked(), fileDto.getUnitScript());
+                    vcDetailRepository.save(vcDetail);
+                    continue;
+                }
+
                 if (audioMeta == null) {
                     throw new BusinessException(ErrorCode.INVALID_PROJECT_DATA);
                 }
 
-                // 소스 파일은 VCDetail에 저장
-                VCDetail vcDetail = VCDetail.createVCDetail(vcProject, audioMeta);
-                vcDetail.updateDetails(fileDto.getIsChecked(), fileDto.getUnitScript());
-                vcDetailRepository.save(vcDetail);
+
             }
         }
     }

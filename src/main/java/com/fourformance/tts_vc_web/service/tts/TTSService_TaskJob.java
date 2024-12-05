@@ -22,6 +22,8 @@ import com.google.cloud.texttospeech.v1.*;
 import com.google.protobuf.ByteString;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -461,7 +463,7 @@ public class TTSService_TaskJob {
         }
     }
 
-    @Transactional
+    @Transactional(isolation = Isolation.SERIALIZABLE, propagation = Propagation.REQUIRED)
     public void enqueueTTSBatchTasks(TTSRequestDto ttsRequestDto, Long memberId) {
         // 요청 데이터 유효성 검사
         validateRequestData(ttsRequestDto);
@@ -485,11 +487,16 @@ public class TTSService_TaskJob {
             // Task 생성 및 저장
             Task task = Task.createTask(ttsProject, ProjectType.TTS, detailJson);
             taskRepository.save(task);
+            taskRepository.flush();
 
-            System.out.println("task.getId() = " + task.getId());
+            Task findTask = taskRepository.findById(task.getId())
+                    .orElseThrow(() -> new BusinessException(ErrorCode.TASK_NOT_FOUND));
+
+
+            System.out.println("task.getId() = " + findTask.getId());
 
             // 메시지 생성 및 RabbitMQ에 전송
-            TTSMsgDto message = createTTSMsgDto(updatedDetailDto, task.getId());
+            TTSMsgDto message = createTTSMsgDto(updatedDetailDto, findTask.getId());
             taskProducer.sendTask("AUDIO_TTS", message);
         }
     }
