@@ -192,6 +192,7 @@ public class VCService_team_api {
         try {
             String convertedFilePath = elevenLabsClient.convertSpeechToSpeech(voiceId, matchingFile.getOriginalFilename());
             File convertedFile = new File(convertedFilePath);
+
             MultipartFile convertedMultipartFile = CommonFileUtils.convertFileToMultipartFile(convertedFile, convertedFile.getName());
             String uploadedUrl = s3Service.uploadUnitSaveFile(convertedMultipartFile, memberId, srcFile.getProjectId(), srcFile.getId());
 
@@ -207,6 +208,7 @@ public class VCService_team_api {
         } catch (Exception e) {
             LOGGER.severe("소스 파일 처리 실패: " + e.getMessage());
             throw new BusinessException(ErrorCode.SERVER_ERROR);
+
         }
     }
 
