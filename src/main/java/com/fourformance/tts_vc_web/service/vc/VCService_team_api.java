@@ -123,7 +123,7 @@ public class VCService_team_api {
      */
     private String processTargetFiles(List<TrgAudioFileRequestDto> trgFiles, Long memberId) {
         // 하드코딩된 Voice ID 사용
-        String voiceId = "DNSy71aycodz7FWtd91e"; // 기존 하드코딩된 코드 유지
+        String voiceId = "0lOWjOLAk4FS2t9EgVFd"; // 기존 하드코딩된 코드 유지
         log.info("[Voice ID 하드코딩 적용] Voice ID: " + voiceId);
         return voiceId;
     }
