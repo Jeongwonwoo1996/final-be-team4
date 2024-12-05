@@ -82,23 +82,19 @@ public class VCService_team_api {
         // Step 5: 저장된 타겟(TRG) 오디오 정보 가져오기
         MemberAudioMeta memberAudio = memberAudioMetaRepository.findSelectedAudioByTypeAndMember(AudioType.VC_TRG, memberId);
         String voiceId;
-
         if (memberAudio != null) {
+
             LOGGER.info("[타겟 오디오 조회 완료] 오디오 ID: " + memberAudio.getId());
 
             // Step 6: 타겟 오디오로 Voice ID 생성
-            voiceId = processTargetFiles(VCSaveRequestDto.getTrgFiles(), memberAudio);
-            LOGGER.info("[Voice ID 생성 완료] Voice ID: " + voiceId);
-        } else {
-            if (VCSaveRequestDto.getTrgFiles() == null || VCSaveRequestDto.getTrgFiles().isEmpty()) {
-                throw new BusinessException(ErrorCode.TRG_FILES_EMPTY);
-            }
 
+            voiceId = processTargetFiles(VCSaveRequestDto.getTrgFiles(), memberAudio);
+
+            LOGGER.info("[Voice ID 생성 완료] Voice ID: " + voiceId);
+        }else{
             voiceId = memberAudioMetaRepository.findtrgVoiceIdById(VCSaveRequestDto.getTrgFiles().get(0).getS3MemberAudioMetaId());
-            if (voiceId == null) {
-                throw new BusinessException(ErrorCode.INVALID_VOICE_ID);
-            }
         }
+
 
         // Step 7: VC 프로젝트에 trg_voice_id 업데이트
         updateProjectTargetVoiceId(projectId, voiceId);
@@ -275,8 +271,6 @@ public class VCService_team_api {
                     LOGGER.warning("변환 파일 삭제 실패: " + convertedFile.getAbsolutePath());
                 } else {
                     LOGGER.info("변환 파일 삭제 성공: " + convertedFilePath);
-
-
                 }
             }
         }
