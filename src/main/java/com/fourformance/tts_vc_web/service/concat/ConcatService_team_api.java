@@ -150,12 +150,6 @@ public class ConcatService_team_api {
                 ConcatDetail concatDetail;
                 MemberAudioMeta memberAudioMeta = null;
 
-//                if (detailDto.getId() == null) {
-//                    LOGGER.info("새로운 ConcatDetail 생성 - AudioSeq: " + detailDto.getAudioSeq());
-//                    // 새로운 디테일인 경우
-//                    memberAudioMeta = uploadConcatDetailSourceAudio(detailDto, concatProject);
-//                }
-
                 if (detailDto.getSourceAudio() != null && !detailDto.getSourceAudio().isEmpty()) {
                     // 새로운 파일 업로드 및 MemberAudioMeta 생성
                     memberAudioMeta = uploadConcatDetailSourceAudio(detailDto, concatProject);
