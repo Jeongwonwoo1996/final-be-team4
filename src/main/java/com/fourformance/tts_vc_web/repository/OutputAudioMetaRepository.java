@@ -51,12 +51,13 @@ public interface OutputAudioMetaRepository extends JpaRepository<OutputAudioMeta
             LEFT JOIN o.vcDetail v
             LEFT JOIN v.vcProject vp
             LEFT JOIN o.concatProject c
-            WHERE (tp.member.id = :memberId AND tp IS NOT NULL)
+            WHERE ((tp.member.id = :memberId AND tp IS NOT NULL)
                OR (vp.member.id = :memberId AND vp IS NOT NULL)
-               OR (c.member.id = :memberId AND c IS NOT NULL)
+               OR (c.member.id = :memberId AND c IS NOT NULL))
+               and o.isDeleted = false
             ORDER BY o.createdAt DESC limit 5
             """)
-    List<OutputAudioMeta> findTop5ByMemberId(@Param("memberId") Long memberId);
+    List<OutputAudioMeta> findTop5RecentOutputAudioMetaByMemberId(@Param("memberId") Long memberId);
 
     // 프로젝트 id로 관련된 모든 아웃풋 메타 데이터 조회ㅡ
     @Query("SELECT oam FROM OutputAudioMeta oam " +
