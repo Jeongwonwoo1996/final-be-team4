@@ -77,6 +77,7 @@
 #         '벵골어(인도)1', 'female', '활발한', 1);
 #
 #
+#
 # INSERT INTO voice_style (country, language_code, voice_type, voice_name, gender, personality, is_visible)
 # VALUES ('벵골어(인도)', 'bn-IN', 'bn-IN-Standard-B',
 #         '벵골어(인도)2', 'male', '쓸쓸한', 1);
