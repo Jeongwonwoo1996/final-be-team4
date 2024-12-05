@@ -52,28 +52,47 @@ public class VCService_team_api {
     /**
      * VC 프로젝트 처리 메서드
      */
+//    public List<VCDetailResDto> processVCProject(VCSaveRequestDto vcSaveRequestDto, List<MultipartFile> files, Long memberId) {
+//        LOGGER.info("[VC 프로젝트 시작]");
+//
+//        // Step 1: 멤버 검증
+//        Member member = memberRepository.findById(memberId)
+//                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+//
+//        // Step 2: VC 프로젝트 저장 및 ID 반환
+//        Long projectId = vcService.saveVCProject(vcSaveRequestDto, files, member);
+//        if (projectId == null) {
+//            throw new BusinessException(ErrorCode.PROJECT_NOT_FOUND);
+//        }
+//        LOGGER.info("[VC 프로젝트 저장 완료] 프로젝트 ID: " + projectId);
+//
+//        // Step 3: VC 디테일 정보 조회 및 처리
+//        List<VCDetailResDto> vcDetailsRes = processVCDetails(projectId, vcSaveRequestDto, files, memberId);
+//
+//        // Step 4: 프로젝트 상태 업데이트
+//        updateProjectStatus(projectId);
+//        LOGGER.info("[VC 프로젝트 상태 업데이트 완료] 프로젝트 ID: " + projectId);
+//
+//        return vcDetailsRes;
+//    }
     public List<VCDetailResDto> processVCProject(VCSaveRequestDto vcSaveRequestDto, List<MultipartFile> files, Long memberId) {
         LOGGER.info("[VC 프로젝트 시작]");
+        Map<String, MultipartFile> fileMap = createFileMap(files);
 
-        // Step 1: 멤버 검증
-        Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+        vcSaveRequestDto.getSrcFiles().forEach(srcFile -> {
+            String strippedLocalFileName = srcFile.getLocalFileName().substring(srcFile.getLocalFileName().lastIndexOf('/') + 1);
+            MultipartFile sourceAudio = fileMap.get(strippedLocalFileName);
 
-        // Step 2: VC 프로젝트 저장 및 ID 반환
-        Long projectId = vcService.saveVCProject(vcSaveRequestDto, files, member);
-        if (projectId == null) {
-            throw new BusinessException(ErrorCode.PROJECT_NOT_FOUND);
-        }
-        LOGGER.info("[VC 프로젝트 저장 완료] 프로젝트 ID: " + projectId);
+            if (sourceAudio == null) {
+                LOGGER.warning("파일 매핑 실패: " + strippedLocalFileName);
+            } else {
+                srcFile.setSourceAudio(sourceAudio);
+                LOGGER.info("매핑 성공: " + strippedLocalFileName + " -> " + sourceAudio.getOriginalFilename());
+            }
+        });
 
-        // Step 3: VC 디테일 정보 조회 및 처리
-        List<VCDetailResDto> vcDetailsRes = processVCDetails(projectId, vcSaveRequestDto, files, memberId);
-
-        // Step 4: 프로젝트 상태 업데이트
-        updateProjectStatus(projectId);
-        LOGGER.info("[VC 프로젝트 상태 업데이트 완료] 프로젝트 ID: " + projectId);
-
-        return vcDetailsRes;
+        LOGGER.info("[VC 프로젝트 완료]");
+        return Collections.emptyList();
     }
 
     /**
@@ -137,6 +156,7 @@ public class VCService_team_api {
 
                         if (srcFile.getLocalFileName() != null) {
                             sourceAudio = fileMap.get(srcFile.getLocalFileName());
+                            System.out.println("sourceAudio = " + sourceAudio);
                             if (sourceAudio == null) {
                                 LOGGER.severe("[로컬 파일 누락] 파일명: " + srcFile.getLocalFileName());
                                 throw new BusinessException(ErrorCode.FILE_NOT_FOUND);
@@ -273,5 +293,13 @@ public class VCService_team_api {
 
         vcProjectRepository.save(project);
         LOGGER.info("[VC 프로젝트 상태 업데이트 완료]");
+    }
+
+    private Map<String, MultipartFile> createFileMap(List<MultipartFile> files) {
+        if (files == null || files.isEmpty()) {
+            LOGGER.info("[업로드된 파일이 없습니다.]");
+            return Map.of();
+        }
+        return files.stream().collect(Collectors.toMap(MultipartFile::getOriginalFilename, file -> file));
     }
 }

@@ -107,17 +107,25 @@ public class VCController_team_api {
     /**
      * 요청 데이터 유효성 검사
      */
+//    private void validateRequestData(VCSaveRequestDto vcSaveRequestDto) {
+//        if (vcSaveRequestDto == null) {
+//            LOGGER.warning("[요청 데이터가 null입니다.]");
+//            throw new BusinessException(ErrorCode.INVALID_REQUEST_DATA);
+//        }
+//        if (vcSaveRequestDto.getTrgFiles() == null || vcSaveRequestDto.getTrgFiles().isEmpty()) {
+//            LOGGER.warning("[타겟 파일이 없습니다.]");
+//            throw new BusinessException(ErrorCode.INVALID_REQUEST_FILE_DATA);
+//        }
+//        if (vcSaveRequestDto.getSrcFiles() == null || vcSaveRequestDto.getSrcFiles().isEmpty()) {
+//            LOGGER.warning("[소스 파일이 없습니다.]");
+//            throw new BusinessException(ErrorCode.INVALID_REQUEST_FILE_DATA);
+//        }
+//        LOGGER.info("[요청 데이터 유효성 검사 통과]");
+//    }
     private void validateRequestData(VCSaveRequestDto vcSaveRequestDto) {
-        if (vcSaveRequestDto == null) {
-            LOGGER.warning("[요청 데이터가 null입니다.]");
-            throw new BusinessException(ErrorCode.INVALID_REQUEST_DATA);
-        }
-        if (vcSaveRequestDto.getTrgFiles() == null || vcSaveRequestDto.getTrgFiles().isEmpty()) {
-            LOGGER.warning("[타겟 파일이 없습니다.]");
-            throw new BusinessException(ErrorCode.INVALID_REQUEST_FILE_DATA);
-        }
-        if (vcSaveRequestDto.getSrcFiles() == null || vcSaveRequestDto.getSrcFiles().isEmpty()) {
-            LOGGER.warning("[소스 파일이 없습니다.]");
+        if (vcSaveRequestDto == null || vcSaveRequestDto.getTrgFiles() == null || vcSaveRequestDto.getTrgFiles().isEmpty()
+                || vcSaveRequestDto.getSrcFiles() == null || vcSaveRequestDto.getSrcFiles().isEmpty()) {
+            LOGGER.warning("[요청 데이터가 잘못되었습니다.]");
             throw new BusinessException(ErrorCode.INVALID_REQUEST_FILE_DATA);
         }
         LOGGER.info("[요청 데이터 유효성 검사 통과]");
@@ -126,33 +134,48 @@ public class VCController_team_api {
     /**
      * 업로드된 파일을 맵으로 변환 (파일명 기준)
      */
+//    private Map<String, MultipartFile> createFileMap(List<MultipartFile> files) {
+//        if (files == null || files.isEmpty()) {
+//            LOGGER.info("[업로드된 파일이 없습니다.]");
+//            return Map.of();
+//        }
+//        return files.stream()
+//                .collect(Collectors.toMap(file -> {
+//                    String filename = file.getOriginalFilename();
+//                    return filename != null ? filename.substring(filename.lastIndexOf('/') + 1) : filename;
+//                }, file -> file));
+//    }
     private Map<String, MultipartFile> createFileMap(List<MultipartFile> files) {
         if (files == null || files.isEmpty()) {
             LOGGER.info("[업로드된 파일이 없습니다.]");
             return Map.of();
         }
-        return files.stream()
-                .collect(Collectors.toMap(MultipartFile::getOriginalFilename, file -> file));
+        Map<String, MultipartFile> fileMap = files.stream()
+                .collect(Collectors.toMap(file -> {
+                    String filename = file.getOriginalFilename();
+                    return filename != null ? filename.substring(filename.lastIndexOf('/') + 1) : filename;
+                }, file -> file));
+        LOGGER.info("[생성된 fileMap 키 확인] " + fileMap.keySet());
+        return fileMap;
     }
 
     /**
      * 요청 데이터의 srcFiles와 업로드된 파일을 매핑
      */
     private void mapFilesToSrcFiles(VCSaveRequestDto vcSaveRequestDto, Map<String, MultipartFile> fileMap) {
-        if (vcSaveRequestDto.getSrcFiles() != null) {
-            vcSaveRequestDto.getSrcFiles().forEach(srcFile -> {
-                if (srcFile.getLocalFileName() != null) {
-                    MultipartFile file = fileMap.get(srcFile.getLocalFileName());
-                    if (file != null) {
-                        srcFile.setSourceAudio(file);
-                        LOGGER.info("매핑 성공: " + srcFile.getLocalFileName() + " -> " + file.getOriginalFilename());
-                    } else {
-                        LOGGER.warning("파일 매핑 실패: " + srcFile.getLocalFileName());
-                    }
+        vcSaveRequestDto.getSrcFiles().forEach(srcFile -> {
+            if (srcFile.getLocalFileName() != null) {
+                String strippedLocalFileName = srcFile.getLocalFileName().substring(srcFile.getLocalFileName().lastIndexOf('/') + 1);
+                MultipartFile file = fileMap.get(strippedLocalFileName);
+                if (file != null) {
+                    srcFile.setSourceAudio(file);
+                    LOGGER.info("매핑 성공: " + strippedLocalFileName + " -> " + file.getOriginalFilename());
                 } else {
-                    LOGGER.info("S3 기반 파일로 매핑됩니다: " + srcFile.getMemberAudioMetaId());
+                    LOGGER.warning("파일 매핑 실패: " + strippedLocalFileName);
                 }
-            });
-        }
+            } else {
+                LOGGER.info("S3 기반 파일로 매핑됩니다: " + srcFile.getMemberAudioMetaId());
+            }
+        });
     }
 }
