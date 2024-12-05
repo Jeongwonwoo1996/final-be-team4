@@ -15,7 +15,7 @@ public class SchedulerConfig implements SchedulingConfigurer {
 
         // Thread 개수 설정
         int n = Runtime.getRuntime().availableProcessors();
-        threadPool.setPoolSize(n);
+        threadPool.setPoolSize(n + 1);
         threadPool.initialize();
 
         taskRegistrar.setTaskScheduler(threadPool);
