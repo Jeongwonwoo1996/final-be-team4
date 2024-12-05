@@ -134,7 +134,6 @@ public class VCService_team_api {
     }
 
 
-
 //    /**
 //     * 타겟 오디오 파일 처리 및 Voice ID 생성 -> 월 한도 돌아오면 사용
 //     */
@@ -240,6 +239,7 @@ public class VCService_team_api {
     }
 
 
+
     /**
      * 단일 소스 파일 처리
      * - 파일을 변환하고 S3에 업로드
@@ -248,10 +248,8 @@ public class VCService_team_api {
         try {
             String convertedFilePath = elevenLabsClient.convertSpeechToSpeech(voiceId, matchingFile.getOriginalFilename());
             File convertedFile = new File(convertedFilePath);
-
             MultipartFile convertedMultipartFile = CommonFileUtils.convertFileToMultipartFile(convertedFile, convertedFile.getName());
             String uploadedUrl = s3Service.uploadUnitSaveFile(convertedMultipartFile, memberId, srcFile.getProjectId(), srcFile.getId());
-
 
             return new VCDetailResDto(
                     srcFile.getId(),
@@ -264,7 +262,6 @@ public class VCService_team_api {
         } catch (Exception e) {
             LOGGER.severe("소스 파일 처리 실패: " + e.getMessage());
             throw new BusinessException(ErrorCode.SERVER_ERROR);
-
         }
     }
 
