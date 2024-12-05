@@ -27,7 +27,7 @@ public interface ProjectRepository extends JpaRepository<Project, Long>, Project
             """)
     List<Project> findTop5ByMemberIdOrderByCreatedAtDesc(@Param("memberId") Long memberId);
 
-    // 멤버 아이디로 isDeleted = false 인 모든 프로젝트 조회
+    // 멤버 아이디로 isDeleted = false 인 모든 프로젝트 조회 - 승민
     @Query(value = "SELECT p.id FROM Project p WHERE p.member.id = :memberId AND p.isDeleted = false")
     List<Long> findByMemberId(@Param("memberId") Long memberId);
 
