@@ -11,6 +11,7 @@ import lombok.Setter;
 @AllArgsConstructor
 @NoArgsConstructor
 public class SrcAudioFileRequestDto extends AudioFileDto {
+    private Long id; //VC 디테일 id
     private AudioType audioType; // 오디오 타입 (VC_TRG 또는 VC_SRC)
     private String localFileName; // 로컬 업로드 파일의 이름 (MultipartFile 매칭)
     private String unitScript; // 선택 사항: 텍스트 스크립트 (nullable)
