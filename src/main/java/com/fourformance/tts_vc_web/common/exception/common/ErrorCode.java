@@ -145,7 +145,7 @@ public enum ErrorCode {
     PHONE_NUMBER_NULL(6025, HttpStatus.BAD_REQUEST, "전화번호는 비워둘 수 없습니다."),
     NAME_MISSING(6026, HttpStatus.BAD_REQUEST, "이름은 필수 입력 항목입니다."),
     TRG_FILES_EMPTY(4001, HttpStatus.BAD_REQUEST, "trgFiles가 비어 있습니다."),
-
+    DUPLICATE_VC_DETAIL(6028,HttpStatus.BAD_REQUEST,"중복된 듀플리케이트"),
 
 
 
