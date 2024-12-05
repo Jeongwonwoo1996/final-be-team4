@@ -142,7 +142,7 @@ public class WorkspaceService {
         }
 
         // 최신 5개의 OutputAudioMeta 레코드 조회
-        List<OutputAudioMeta> recentExports = outputAudioMetaRepository.findTop5ByMemberId(memberId);
+        List<OutputAudioMeta> recentExports = outputAudioMetaRepository.findTop5RecentOutputAudioMetaByMemberId(memberId);
 
         // DTO로 변환
         return recentExports.stream()
