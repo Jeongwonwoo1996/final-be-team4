@@ -22,6 +22,7 @@ import com.fourformance.tts_vc_web.dto.response.DataResponseDto;
 import com.fourformance.tts_vc_web.dto.response.ResponseDto;
 import com.fourformance.tts_vc_web.dto.tts.TTSResponseDetailDto;
 import com.fourformance.tts_vc_web.dto.vc.VCDetailResDto;
+import com.fourformance.tts_vc_web.repository.ProjectRepository;
 import com.fourformance.tts_vc_web.repository.TTSProjectRepository;
 import com.fourformance.tts_vc_web.repository.TaskHistoryRepository;
 import com.fourformance.tts_vc_web.repository.TaskRepository;
@@ -50,6 +51,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class TaskConsumer {
 
+    private final ProjectRepository projectRepository;
     @Value("${upload.dir}")
     private String uploadDir;
 
@@ -75,6 +77,7 @@ public class TaskConsumer {
         Long projectId = -1L;
         Long detailId  = -1L;
         Long taskId    = -1L;
+        Long memberId = null;
 
         try {
             // meassage(String) -> TTSMsgDto 로 역직렬화
@@ -82,6 +85,9 @@ public class TaskConsumer {
             projectId = ttsMsgDto.getProjectId();
             detailId  = ttsMsgDto.getDetailId();
             taskId    = ttsMsgDto.getTaskId();
+            memberId = projectRepository.findById(projectId)
+                    .map(project -> project.getMember().getId())
+                    .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
             if(projectId == -1L || detailId == -1L || taskId == -1) { throw new BusinessException(ErrorCode.JSON_PROCESSING_ERROR); }
 
@@ -97,7 +103,7 @@ public class TaskConsumer {
 
             // 상태 업데이트
             updateStatus(task.getId(), TaskStatusConst.RUNNABLE, "작업 시작");
-            sseService.sendToClient(projectId, "TTS 작업이 시작되었습니다.");
+            sseService.sendToClient(memberId,  "TTS 작업이 시작되었습니다.");
 
             // TTS 작업
             TTSProject ttsProject = ttsProjectRepository.findById(projectId)
@@ -126,12 +132,12 @@ public class TaskConsumer {
             channel.basicAck(tag, false);
 
             updateStatus(taskId, TaskStatusConst.COMPLETED, "작업 완료");
-            sseService.sendToClient(projectId, response);
+            sseService.sendToClient(memberId, response);
 
         } catch (JsonProcessingException JsonError) { // JSON 파싱 에러 처리
 
             updateStatus(taskId, TaskStatusConst.FAILED, "작업 실패");
-            sseService.sendToClient(projectId, null);
+            sseService.sendToClient(memberId, null);
             throw new BusinessException(ErrorCode.JSON_PROCESSING_ERROR);
 
         } catch (Exception e) {
@@ -145,7 +151,7 @@ public class TaskConsumer {
                 throw new BusinessException(ErrorCode.FAILED_TASK_PROCESSING_ERROR);
             } finally {
                 updateStatus(taskId, TaskStatusConst.FAILED, "작업 실패");
-                sseService.sendToClient(projectId, null);
+                sseService.sendToClient(memberId, null);
             }
         }
     }
@@ -163,6 +169,7 @@ public class TaskConsumer {
         Long projectId = -1L;
         Long detailId  = -1L;
         Long taskId    = -1L;
+        Long memberId = null;
 
         try {
             // meassage(String) -> VCMsgDto 로 역직렬화
@@ -170,6 +177,9 @@ public class TaskConsumer {
             projectId = vcMsgDto.getProjectId();
             detailId  = vcMsgDto.getDetailId();
             taskId    = vcMsgDto.getTaskId();
+            memberId = projectRepository.findById(projectId)
+                    .map(project -> project.getMember().getId())
+                    .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
             if(projectId == -1L || detailId == -1L || taskId == -1) { throw new BusinessException(ErrorCode.JSON_PROCESSING_ERROR); }
 
@@ -184,7 +194,7 @@ public class TaskConsumer {
 
             // 상태 업데이트
             updateStatus(taskId, TaskStatusConst.RUNNABLE, "작업 시작");
-            sseService.sendToClient(projectId, "VC 작업이 시작되었습니다.");
+            sseService.sendToClient(memberId, "VC 작업이 시작되었습니다.");
 
             // VC 작업
             VCDetailResDto vcDetailsRes = vcService.processSourceFile(vcMsgDto);
@@ -194,13 +204,13 @@ public class TaskConsumer {
             // 메시지 처리 완료 시 (1. RabbitMQ에 ACK 전송, 2. SSE로 전달, 3. 상태값 변환(완료))
             channel.basicAck(tag, false);
             updateStatus(taskId, TaskStatusConst.COMPLETED, "작업 완료");
-            sseService.sendToClient(projectId, response);
+            sseService.sendToClient(memberId, response);
 
 
         }catch (JsonProcessingException JsonError) { // JSON 파싱 에러 처리
 
             updateStatus(taskId, TaskStatusConst.FAILED, "작업 실패");
-            sseService.sendToClient(projectId, null);
+            sseService.sendToClient(memberId, null);
             throw new BusinessException(ErrorCode.JSON_PROCESSING_ERROR);
 
         } catch (Exception e) {
@@ -211,7 +221,7 @@ public class TaskConsumer {
                 throw new BusinessException(ErrorCode.FAILED_TASK_PROCESSING_ERROR);
             } finally {
                 updateStatus(taskId, TaskStatusConst.FAILED, "작업 실패");
-                sseService.sendToClient(projectId, null);
+                sseService.sendToClient(memberId, null);
             }
         }
     }
@@ -225,12 +235,16 @@ public class TaskConsumer {
     public void handleConcatTask(String message, Channel channel, @Header(AmqpHeaders.DELIVERY_TAG) long tag) {
         Long projectId = -1L;
         Long taskId    = -1L;
+        Long memberId = null;
 
         try {
             // meassage(String) -> VCMsgDto 로 역직렬화
             ConcatMsgDto concatMsgDto = objectMapper.readValue(message, ConcatMsgDto.class);
             projectId = concatMsgDto.getProjectId();
             taskId    = concatMsgDto.getTaskId();
+            memberId = projectRepository.findById(projectId)
+                    .map(project -> project.getMember().getId())
+                    .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
             if(projectId == -1L || taskId == -1) { throw new BusinessException(ErrorCode.JSON_PROCESSING_ERROR); }
 
@@ -245,7 +259,7 @@ public class TaskConsumer {
 
             // 상태 업데이트
             updateStatus(taskId, TaskStatusConst.RUNNABLE, "작업 시작");
-            sseService.sendToClient(projectId, "Concat 작업이 시작되었습니다.");
+            sseService.sendToClient(memberId, "Concat 작업이 시작되었습니다.");
 
 
             // Concat 작업 시작
@@ -284,7 +298,7 @@ public class TaskConsumer {
             // 메시지 처리 완료 시 (1. RabbitMQ에 ACK 전송, 2. SSE로 전달, 3. 상태값 변환(완료))
             channel.basicAck(tag, false);
             updateStatus(taskId, TaskStatusConst.COMPLETED, "작업 완료");
-            sseService.sendToClient(projectId, response);
+            sseService.sendToClient(memberId, response);
 
 
         }catch(Exception e){
@@ -294,7 +308,7 @@ public class TaskConsumer {
                 throw new BusinessException(ErrorCode.FAILED_TASK_PROCESSING_ERROR);
             } finally {
                 updateStatus(taskId, TaskStatusConst.FAILED, "작업 실패");
-                sseService.sendToClient(projectId, null);
+                sseService.sendToClient(memberId, null);
             }
         }
     }
