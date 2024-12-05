@@ -463,43 +463,43 @@ public class TTSService_TaskJob {
         }
     }
 
-    @Transactional(isolation = Isolation.SERIALIZABLE, propagation = Propagation.REQUIRED)
-    public void enqueueTTSBatchTasks(TTSRequestDto ttsRequestDto, Long memberId) {
-        // 요청 데이터 유효성 검사
-        validateRequestData(ttsRequestDto);
-
-        // 프로젝트 저장
-        TTSProject ttsProject = saveOrUpdateProject(ttsRequestDto, memberId);
-
-
-        // 디테일별 작업 처리
-        for (TTSRequestDetailDto detail : ttsRequestDto.getTtsDetails()) {
-            // 디테일 저장
-            TTSDetail ttsDetail = saveOrUpdateDetail(detail, ttsProject);
-
-            // 엔티티를 DTO로 변환
-            TTSRequestDetailDto updatedDetailDto = convertToDto(ttsDetail);
-
-            // 디테일 DTO를 JSON으로 변환
-            String detailJson = convertDetailToJson(updatedDetailDto);
-            System.out.println("detailJson = " + detailJson);
-
-            // Task 생성 및 저장
-            Task task = Task.createTask(ttsProject, ProjectType.TTS, detailJson);
-            taskRepository.save(task);
-            taskRepository.flush();
-
-            Task findTask = taskRepository.findById(task.getId())
-                    .orElseThrow(() -> new BusinessException(ErrorCode.TASK_NOT_FOUND));
-
-
-            System.out.println("task.getId() = " + findTask.getId());
-
-            // 메시지 생성 및 RabbitMQ에 전송
-            TTSMsgDto message = createTTSMsgDto(updatedDetailDto, findTask.getId());
-            taskProducer.sendTask("AUDIO_TTS", message);
-        }
-    }
+//    @Transactional(isolation = Isolation.SERIALIZABLE, propagation = Propagation.REQUIRED)
+//    public void enqueueTTSBatchTasks(TTSRequestDto ttsRequestDto, Long memberId) {
+//        // 요청 데이터 유효성 검사
+//        validateRequestData(ttsRequestDto);
+//
+//        // 프로젝트 저장
+//        TTSProject ttsProject = saveOrUpdateProject(ttsRequestDto, memberId);
+//
+//
+//        // 디테일별 작업 처리
+//        for (TTSRequestDetailDto detail : ttsRequestDto.getTtsDetails()) {
+//            // 디테일 저장
+//            TTSDetail ttsDetail = saveOrUpdateDetail(detail, ttsProject);
+//
+//            // 엔티티를 DTO로 변환
+//            TTSRequestDetailDto updatedDetailDto = convertToDto(ttsDetail);
+//
+//            // 디테일 DTO를 JSON으로 변환
+//            String detailJson = convertDetailToJson(updatedDetailDto);
+//            System.out.println("detailJson = " + detailJson);
+//
+//            // Task 생성 및 저장
+//            Task task = Task.createTask(ttsProject, ProjectType.TTS, detailJson);
+//            taskRepository.save(task);
+//            taskRepository.flush();
+//
+//            Task findTask = taskRepository.findById(task.getId())
+//                    .orElseThrow(() -> new BusinessException(ErrorCode.TASK_NOT_FOUND));
+//
+//
+//            System.out.println("task.getId() = " + findTask.getId());
+//
+//            // 메시지 생성 및 RabbitMQ에 전송
+//            TTSMsgDto message = createTTSMsgDto(updatedDetailDto, findTask.getId());
+//            taskProducer.sendTask("AUDIO_TTS", message);
+//        }
+//    }
 
     /**
      * 요청 데이터 유효성 검사
@@ -564,6 +564,55 @@ public class TTSService_TaskJob {
                 .unitSequence(ttsDetail.getUnitSequence())
                 .build();
     }
+
+    //---------------------------------------------------------------------------
+
+    @Transactional(isolation = Isolation.SERIALIZABLE, propagation = Propagation.REQUIRED)
+    public void enqueueTTSBatchTasks(TTSRequestDto ttsRequestDto, Long memberId) {
+        // 요청 데이터 유효성 검사
+        validateRequestData(ttsRequestDto);
+
+        // 프로젝트 저장
+        TTSProject ttsProject = saveOrUpdateProject(ttsRequestDto, memberId);
+
+        // 디테일 작업 처리
+        processDetailsAndEnqueueTasks(ttsRequestDto, ttsProject);
+    }
+
+    private void processDetailsAndEnqueueTasks(TTSRequestDto ttsRequestDto, TTSProject ttsProject) {
+        for (TTSRequestDetailDto detail : ttsRequestDto.getTtsDetails()) {
+            // 디테일 저장
+            TTSDetail ttsDetail = saveOrUpdateDetail(detail, ttsProject);
+
+            // Task 생성 및 큐에 추가
+            createTaskAndEnqueue(ttsDetail, ttsProject);
+        }
+    }
+
+    private void createTaskAndEnqueue(TTSDetail ttsDetail, TTSProject ttsProject) {
+        // 엔티티를 DTO로 변환
+        TTSRequestDetailDto updatedDetailDto = convertToDto(ttsDetail);
+
+        // 디테일 DTO를 JSON으로 변환
+        String detailJson = convertDetailToJson(updatedDetailDto);
+        System.out.println("detailJson = " + detailJson);
+
+        // Task 생성 및 저장
+        Task task = createAndSaveTask(ttsProject, detailJson);
+
+        // RabbitMQ에 메시지 전송
+        TTSMsgDto message = createTTSMsgDto(updatedDetailDto, task.getId());
+        taskProducer.sendTask("AUDIO_TTS", message);
+    }
+
+    private Task createAndSaveTask(TTSProject ttsProject, String detailJson) {
+        Task task = Task.createTask(ttsProject, ProjectType.TTS, detailJson);
+        taskRepository.save(task);
+
+        return taskRepository.findById(task.getId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.TASK_NOT_FOUND));
+    }
+
 }
 
 
