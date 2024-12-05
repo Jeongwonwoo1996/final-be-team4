@@ -157,6 +157,8 @@ public enum ErrorCode {
     JSON_PROCESSING_ERROR(7001, HttpStatus.BAD_REQUEST, "JSON 변환 중 오류 발생"),
     TASK_NOT_FOUND(7002,HttpStatus.NOT_FOUND,"TASK를 찾을 수 없습니다."),
     FAILED_TASK_PROCESSING_ERROR(7003,HttpStatus.BAD_REQUEST,"실패 작업 처리 중 오류 발생"),
+    DLQ_RETRY_FAILED(7004,HttpStatus.BAD_REQUEST,"실패 큐 작업 실패"),
+    DLQ_MESSAGE_PROCESSING_FAILED(7005,HttpStatus.BAD_REQUEST,"x-death 헤더에서 원래 큐 정보를 찾을 수 없습니다."),
 
 
 

@@ -1,5 +1,7 @@
 package com.fourformance.tts_vc_web.service.common;
 
+import com.fourformance.tts_vc_web.common.exception.common.BusinessException;
+import com.fourformance.tts_vc_web.common.exception.common.ErrorCode;
 import com.fourformance.tts_vc_web.repository.ProjectRepository;
 import com.fourformance.tts_vc_web.repository.common.EmitterRepository;
 import lombok.RequiredArgsConstructor;
@@ -56,16 +58,14 @@ public class SseEmitterService {
     /**
      * 클라이언트에게 데이터 전송
      */
-    public void sendToClient(Long projectId, Object data) {
+    public void sendToClient(Long memberId, Object data) {
 
         if (data == null) {
             data = "No data available";
         }
 
-        // projectId를 기반으로 memberId를 찾습니다.
-        Long memberId = projectRepository.findById(projectId)
-                .map(project -> project.getMember().getId()) // Project에서 Member를 찾아 Member ID 반환
-                .orElseThrow(() -> new RuntimeException("Member not found for projectId: " + projectId));
+        if(memberId == null) { throw new BusinessException(ErrorCode.MEMBER_NOT_FOUND); }
+
 
         SseEmitter emitter = emitterRepository.get(memberId);
         if (emitter != null) {

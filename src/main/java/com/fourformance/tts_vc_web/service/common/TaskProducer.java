@@ -20,10 +20,12 @@ public class TaskProducer {
     public void sendTask(String taskType, Object messageDto) {
         try {
             String routingKey = getRoutingKey(taskType);
-            // 유람: 작업 추가
+
             String message = objectMapper.writeValueAsString(messageDto); // DTO를 JSON으로 직렬화
 
             rabbitTemplate.convertAndSend(TaskConfig.EXCHANGE_NAME, routingKey, message);
+
+            // 큐에 넣고, 상태를 waiting으로 바꾸는 로직 필요
 
             System.out.println("Sent message: [" + message + "] to routing key: " + routingKey);
         } catch (Exception e) {
@@ -32,7 +34,7 @@ public class TaskProducer {
     }
 
     // 작업 유형에 따른 Routing Key 반환
-    private String getRoutingKey(String taskType) {
+    public String getRoutingKey(String taskType) {
         switch (taskType) {
             case "AUDIO_TTS":
                 return "tts";
