@@ -23,7 +23,9 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 @RestController
 @RequiredArgsConstructor
@@ -54,7 +56,7 @@ public class ConcatController_team_api {
     })
     public ResponseDto convertMultipleAudios(
             @RequestPart("concatRequestDto") @Parameter(description = "요청 DTO") ConcatRequestDto concatRequestDto,
-            @RequestPart("files") @Parameter(description = "업로드할 파일들") List<MultipartFile> files, HttpSession session
+            @RequestPart(value = "files", required = false) @Parameter(description = "업로드할 파일들") List<MultipartFile> files, HttpSession session
     ) {
         LOGGER.info("컨트롤러 메서드 호출됨: " + concatRequestDto); // 요청 데이터 로깅
 
@@ -78,22 +80,65 @@ public class ConcatController_team_api {
         try {
             // 2. 파일 수와 요청 DTO의 상세 정보 수가 동일한지 확인
             List<ConcatRequestDetailDto> details = concatRequestDto.getConcatRequestDetails();
-            if (details.size() != files.size()) {
-                LOGGER.warning("파일 수와 요청 DTO의 상세 데이터 수가 일치하지 않음");
-                throw new BusinessException(ErrorCode.INVALID_REQUEST_DATA);
-            }
 
-            // 3. 요청 DTO의 각 상세 항목에 업로드된 파일 매핑
-            for (int i = 0; i < details.size(); i++) {
-                ConcatRequestDetailDto detail = details.get(i);
-//                MultipartFile file = files.get(i);
-                MultipartFile file = vcService.findMultipartFileByName(files, detail.getLocalFileName());
 
-                // 예를 들어, 파일명과 detail의 정보가 일치하는지 확인
-                LOGGER.info("매핑 중 - Detail localFileName: " + detail.getLocalFileName() + ", 파일명: " + file.getOriginalFilename());
+//            if (details.size() != files.size()) {
+//                LOGGER.warning("파일 수와 요청 DTO의 상세 데이터 수가 일치하지 않음");
+//                throw new BusinessException(ErrorCode.INVALID_REQUEST_DATA);
+//            }
+//
+//            // 3. 요청 DTO의 각 상세 항목에 업로드된 파일 매핑
+//            for (int i = 0; i < details.size(); i++) {
+//                ConcatRequestDetailDto detail = details.get(i);
+////                MultipartFile file = files.get(i);
+//                MultipartFile file = vcService.findMultipartFileByName(files, detail.getLocalFileName());
+//
+//                // 예를 들어, 파일명과 detail의 정보가 일치하는지 확인
+//                LOGGER.info("매핑 중 - Detail localFileName: " + detail.getLocalFileName() + ", 파일명: " + file.getOriginalFilename());
+//
+//                detail.setSourceAudio(file);
+//
+//            }
 
-                detail.setSourceAudio(file);
+            // 파일이 있는 경우에만 매핑 로직 수행
+//            if (files != null && !files.isEmpty()) {
+//                // 2. 요청 DTO의 각 상세 항목에 업로드된 파일 매핑
+//                for (int i = 0; i < details.size(); i++) {
+//                    ConcatRequestDetailDto detail = details.get(i);
+//                    MultipartFile file = vcService.findMultipartFileByName(files, detail.getLocalFileName());
+//
+//                    if (file != null) {
+//                        LOGGER.info("매핑 중 - Detail localFileName: " + detail.getLocalFileName() + ", 파일명: " + file.getOriginalFilename());
+//                        detail.setSourceAudio(file);
+//                    }
+//                }
+//            }
 
+            // 파일이 있는 경우에만 매핑 로직 수행
+            if (files != null && !files.isEmpty()) {
+                // 업로드된 파일을 맵으로 변환 (파일명 기준)
+                Map<String, MultipartFile> fileMap = files.stream()
+                        .collect(Collectors.toMap(MultipartFile::getOriginalFilename, file -> file));
+
+                // 요청 DTO의 각 상세 항목에 업로드된 파일 매핑
+                for (ConcatRequestDetailDto detail : details) {
+                    String localFileName = detail.getLocalFileName();
+
+                    if (localFileName != null && !localFileName.isEmpty()) {
+                        MultipartFile file = fileMap.get(localFileName);
+
+                        if (file != null) {
+                            LOGGER.info("매핑 중 - Detail localFileName: " + localFileName + ", 파일명: " + file.getOriginalFilename());
+                            detail.setSourceAudio(file);
+                        } else {
+                            LOGGER.warning("업로드된 파일에서 localFileName과 일치하는 파일을 찾을 수 없습니다: " + localFileName);
+                            // 필요한 경우 예외 처리 추가
+                        }
+                    } else {
+                        LOGGER.info("localFileName이 없으므로 S3에 있는 파일로 처리합니다. Detail ID: " + detail.getId());
+                        // 아무 것도 하지 않음
+                    }
+                }
             }
 
             // 4. 서비스 로직 호출: 병합 처리 실행
