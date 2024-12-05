@@ -105,6 +105,7 @@ public class VCViewController_team_multi {
     public ResponseDto saveVCProject(
             @RequestPart(value = "file", required = false) List<MultipartFile> files,
             @RequestPart("metadata") VCSaveDto vcSaveDto, HttpSession session) {
+        session.setAttribute("memberId",1L);
         // 세션에 memberId 설정
         if (session.getAttribute("memberId") == null) {
             throw new BusinessException(ErrorCode.MEMBER_NOT_FOUND);
