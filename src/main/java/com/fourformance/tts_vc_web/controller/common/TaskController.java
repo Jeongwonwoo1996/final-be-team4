@@ -2,25 +2,21 @@ package com.fourformance.tts_vc_web.controller.common;
 
 import com.fourformance.tts_vc_web.common.exception.common.BusinessException;
 import com.fourformance.tts_vc_web.common.exception.common.ErrorCode;
+import com.fourformance.tts_vc_web.dto.common.TaskLoadDto;
 import com.fourformance.tts_vc_web.dto.concat.ConcatRequestDto;
 import com.fourformance.tts_vc_web.dto.response.DataResponseDto;
 import com.fourformance.tts_vc_web.dto.response.ResponseDto;
 import com.fourformance.tts_vc_web.dto.tts.TTSRequestDto;
 import com.fourformance.tts_vc_web.dto.vc.VCSaveRequestDto;
 import com.fourformance.tts_vc_web.service.common.TaskProducer;
+import com.fourformance.tts_vc_web.service.common.TaskService;
 import com.fourformance.tts_vc_web.service.concat.ConcatService_TaskJob;
 import com.fourformance.tts_vc_web.service.tts.TTSService_TaskJob;
 import com.fourformance.tts_vc_web.service.vc.VCService_TaskJob;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -28,15 +24,58 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 import java.util.Map;
 
+
 @RestController
-@RequestMapping("/tasks")
+@RequestMapping("/task")
 @RequiredArgsConstructor
 public class TaskController {
 
-    private final TaskProducer taskProducer;
     private final TTSService_TaskJob ttsServiceTaskJob;
     private final VCService_TaskJob vcServiceTask;
     private final ConcatService_TaskJob concatTaskService; // 병합 서비스 의존성 주입
+    private final TaskService taskService;
+
+    @Operation(
+            summary = "작업 가져오기",
+            description = "Save 버튼을 이용하여 백업해놓은 작업을 불러와서 실행합니다." )
+    @GetMapping("/load")
+    public ResponseDto load(HttpSession session){
+
+        // memberId 세션에서 가져오기
+        if (session.getAttribute("memberId") == null) {
+            throw new BusinessException(ErrorCode.MEMBER_NOT_FOUND);
+        }
+        Long memberId = (Long) session.getAttribute("memberId");
+
+        List<TaskLoadDto> taskLoadDtos = taskService.getTasksByMemberAndConditions(memberId);
+
+        return DataResponseDto.of(taskLoadDtos, "작업 목록 로드 성공");
+    }
+
+    @Operation(
+            summary = "작업 초기화",
+            description = "지금까지 걸어놓은 모든 작업 현황을 삭제합니다." )
+    @DeleteMapping("/clear")
+    public ResponseDto clear(HttpSession session){
+
+        // memberId 세션에서 가져오기
+        if (session.getAttribute("memberId") == null) {
+            throw new BusinessException(ErrorCode.MEMBER_NOT_FOUND);
+        }
+        Long memberId = (Long) session.getAttribute("memberId");
+
+        taskService.terminatePendingTasks(memberId);
+
+        return DataResponseDto.of("","작업 초기화 성공");
+    }
+
+    @Operation(
+            summary = "실패 작업 재실행 버튼",
+            description = "실패한 작업을 재실행합니다." )
+    @PostMapping("/restart")
+    public ResponseDto restart(){
+        return DataResponseDto.of("");
+    }
 
 
     @PostMapping("/tts/convert")
@@ -61,7 +100,6 @@ public class TaskController {
         ));
 
     }
-
 
 
     @PostMapping(value = "/vc/convert", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -120,7 +158,6 @@ public class TaskController {
 
     }
 
-
     /**
      * 요청 데이터 유효성 검사
      *
@@ -135,7 +172,5 @@ public class TaskController {
             throw new BusinessException(ErrorCode.INVALID_REQUEST_FILE_DATA);
         }
     }
-
-
 
 }
