@@ -147,11 +147,11 @@ public enum ErrorCode {
     TRG_FILES_EMPTY(4001, HttpStatus.BAD_REQUEST, "trgFiles가 비어 있습니다."),
     DUPLICATE_VC_DETAIL(6028,HttpStatus.BAD_REQUEST,"중복된 듀플리케이트"),
 
-
+    INVALID_MEMBER_ID(6029,HttpStatus.BAD_REQUEST,"유효하지 않은 memberId입니다."),
 
 
     SERVICE_UNAVAILABLE(6027, HttpStatus.SERVICE_UNAVAILABLE, "서비스를 사용할 수 없습니다. 잠시 후 다시 시도해주세요."),
-
+    FILE_CONVERSION_FAILED(6030,HttpStatus.BAD_REQUEST,"변환실패"),
 
     // 7000번대 코드 : 작업 큐 관련 예외
     UNKNOWN_TASK_TYPE(7000, HttpStatus.NOT_FOUND, "작업 유형을 알 수 없습니다."),
@@ -160,8 +160,6 @@ public enum ErrorCode {
     FAILED_TASK_PROCESSING_ERROR(7003,HttpStatus.BAD_REQUEST,"실패 작업 처리 중 오류 발생"),
     DLQ_RETRY_FAILED(7004,HttpStatus.BAD_REQUEST,"실패 큐 작업 실패"),
     DLQ_MESSAGE_PROCESSING_FAILED(7005,HttpStatus.BAD_REQUEST,"x-death 헤더에서 원래 큐 정보를 찾을 수 없습니다."),
-
-
 
 
     // 9999 : 테스트용 커스텀 예외
