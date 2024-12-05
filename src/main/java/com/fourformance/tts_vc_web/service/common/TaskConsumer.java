@@ -91,9 +91,10 @@ public class TaskConsumer {
                 return;
             }
 
-
+            System.out.println("taskId = " + taskId);
             // 상태 업데이트
-            updateStatus(taskId, TaskStatusConst.RUNNABLE, "작업 시작");
+            updateStatus(task.getId(), TaskStatusConst.RUNNABLE, "작업 시작");
+            System.out.println("=============실행됑라라ㅏ랄");
             sseService.sendToClient(projectId, "TTS 작업이 시작되었습니다.");
 
             // TTS 작업
@@ -297,6 +298,7 @@ public class TaskConsumer {
      */
     @Transactional
     public void updateStatus(Long taskId, TaskStatusConst newStatusConst, String msg) {
+        System.out.println("==============업데이트 스테이터스 메서드 초입");
         // 1. Task 엔티티 조회 및 상태 update
         Task task = taskRepository.findById(taskId)
                  .orElseThrow(() ->  new BusinessException(ErrorCode.TASK_NOT_FOUND));
