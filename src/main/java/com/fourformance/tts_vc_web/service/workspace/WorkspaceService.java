@@ -137,7 +137,6 @@ public class WorkspaceService {
      */
 
     public List<RecentExportDto> getRecentExports(Long memberId) {
-
         if (memberId == null) {
             throw new BusinessException(ErrorCode.MEMBER_NOT_FOUND);
         }
@@ -149,35 +148,42 @@ public class WorkspaceService {
         return recentExports.stream()
                 .map(this::mapToRecentExportDto)
                 .collect(Collectors.toList());
-
     }
 
     private RecentExportDto mapToRecentExportDto(OutputAudioMeta meta) {
-        RecentExportDto dto = new RecentExportDto(); // DTO를 만들고
+        RecentExportDto dto = new RecentExportDto(); // DTO를 생성
 
-        // 공통설정
-        dto.setMetaId(meta.getId()); // 메타아이디를 넣는거는 상관없음
-        dto.setFileName(extractFileName(meta.getBucketRoute()));
-//        dto.setBucketRoute(meta.getBucketRoute());
-        dto.setUrl(s3Service.generatePresignedUrl(meta.getBucketRoute()));
-        dto.setUnitStatus(getLatestUnitStatusFromMeta(meta));
+        // 공통 설정
+        dto.setMetaId(meta.getId()); // OutputAudioMeta ID
+        dto.setFileName(extractFileName(meta.getBucketRoute())); // 파일명 추출
+        dto.setUrl(s3Service.generatePresignedUrl(meta.getBucketRoute())); // S3 Presigned URL 생성
+        dto.setUnitStatus(getLatestUnitStatusFromMeta(meta)); // 최신 Unit Status 설정
 
         if (meta.getTtsDetail() != null) {
-            dto.setProjectName(meta.getTtsDetail().getTtsProject().getProjectName());
+            // TTS 프로젝트 관련 설정
+            TTSProject ttsProject = meta.getTtsDetail().getTtsProject();
+            dto.setProjectId(ttsProject.getId()); // TTS 프로젝트 ID
+            dto.setProjectName(ttsProject.getProjectName());
             dto.setProjectType(ProjectType.TTS);
             dto.setScript(meta.getTtsDetail().getUnitScript());
 
         } else if (meta.getVcDetail() != null) {
-            dto.setProjectName(meta.getVcDetail().getVcProject().getProjectName());
+            // VC 프로젝트 관련 설정
+            VCProject vcProject = meta.getVcDetail().getVcProject();
+            dto.setProjectId(vcProject.getId()); // VC 프로젝트 ID
+            dto.setProjectName(vcProject.getProjectName());
             dto.setProjectType(ProjectType.VC);
             dto.setScript(meta.getVcDetail().getUnitScript());
 
         } else if (meta.getConcatProject() != null) {
+            // Concat 프로젝트 관련 설정
+            ConcatProject concatProject = meta.getConcatProject();
+            dto.setProjectId(concatProject.getId()); // Concat 프로젝트 ID
+            dto.setProjectName(concatProject.getProjectName());
             List<String> scripts = outputAudioMetaRepository.findConcatDetailScriptsByOutputAudioMetaId(meta.getId());
-            String combinedScripts = String.join(" ", scripts);
+            String combinedScripts = String.join(" ", scripts); // 여러 스크립트를 공백으로 연결
+            dto.setScript(combinedScripts);
             dto.setProjectType(ProjectType.CONCAT);
-            dto.setProjectName(meta.getConcatProject().getProjectName());
-            dto.setScript(combinedScripts); // 조인해야지 볼 수 있음.
         }
 
         return dto;
