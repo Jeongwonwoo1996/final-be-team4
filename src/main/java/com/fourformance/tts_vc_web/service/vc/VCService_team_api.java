@@ -16,6 +16,7 @@ import com.fourformance.tts_vc_web.dto.vc.VCDetailResDto;
 import com.fourformance.tts_vc_web.dto.vc.VCSaveRequestDto;
 import com.fourformance.tts_vc_web.repository.*;
 import com.fourformance.tts_vc_web.service.common.S3Service;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -31,6 +32,7 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 @Service
+@Transactional
 @RequiredArgsConstructor
 public class VCService_team_api {
 
@@ -108,7 +110,6 @@ public class VCService_team_api {
 
         return vcDetailsRes;
     }
-
 
 
 //    /**
@@ -221,11 +222,8 @@ public class VCService_team_api {
             Long memberId) {
 
 
-
         String convertedFilePath = null;
         File convertedFile = null;
-
-
 
 
         try {
@@ -241,8 +239,6 @@ public class VCService_team_api {
             LOGGER.info("[파일 변환 완료] 파일 경로: " + convertedFilePath);
 
 
-
-
             // Step 3: 변환된 파일 읽기 및 S3 저장
             convertedFile = new File(convertedFilePath);
             byte[] convertedFileBytes = Files.readAllBytes(convertedFile.toPath());
@@ -252,7 +248,6 @@ public class VCService_team_api {
             LOGGER.info("[S3 업로드 완료] URL: " + vcOutputUrl);
 
             // Step 4: 결과 DTO 생성 및 반환
-
 
 
             return new VCDetailResDto(
@@ -268,7 +263,6 @@ public class VCService_team_api {
             e.printStackTrace();
             throw new BusinessException(ErrorCode.SERVER_ERROR);
         } finally {
-
 
 
             // 변환 파일 삭제 로직을 finally 블록에 추가하여 항상 실행되도록 함
@@ -343,4 +337,3 @@ public class VCService_team_api {
                 .orElse(null);
     }
 }
-
