@@ -21,7 +21,7 @@ public class AudioScheduler {
         memberAudioMetaService.deleteOldVcAudios();
     }
 
-    @Scheduled(cron = "0 0 0 * * ?") // 매주 일요일 새벽 1시에 처리 예약
+    @Scheduled(cron = "0 0 0 * * ?") // 매일 00시 실행
     public void cleanUpDeletedFiles() {
         schedulerService.recheckDeleteAllS3Audio();
     }
