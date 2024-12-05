@@ -147,7 +147,6 @@ public class VCService_team_multi {
 
         // 3. 소스 파일 처리 (vc detail 처리)
         processSrcFiles(vcSaveDto.getSrcFiles(), localFiles, vcProject);
-//        processFiles(vcSaveDto.getSrcFiles(), localFiles, vcProject, AudioType.VC_SRC);
 
         return vcProject.getId();
     }
@@ -160,16 +159,36 @@ public class VCService_team_multi {
         // 1. VCProject 생성/업데이트
         VCProject vcProject = vcSaveDto.getProjectId() == null
                 ? createNewVCProject(vcSaveDto, member)
-                : updateExistingVCProject(vcSaveDto); // member는 안넘겨도 될 것 같음
+                : updateExistingVCProject(vcSaveDto);
 
         // 2. 타겟 파일 처리
         processFiles(vcSaveDto.getTrgFiles(), localFiles, vcProject, AudioType.VC_TRG);
 
-        // 3. 소스 파일 처리
-        processFiles(vcSaveDto.getSrcFiles(), localFiles, vcProject, AudioType.VC_SRC);
+        // **추가된 부분: 소스 파일 업데이트 먼저 처리**
+        if (vcSaveDto.getSrcFiles() != null) {
+            // 업데이트 처리
+            for (SrcAudioFileRequestDto srcFile : vcSaveDto.getSrcFiles()) {
+                if (srcFile.getId() != null) { // ID가 존재하는 경우 업데이트
+                    VCDetail existingDetail = vcDetailRepository.findById(srcFile.getId())
+                            .orElseThrow(() -> new BusinessException(ErrorCode.VC_DETAIL_NOT_FOUND));
+                    existingDetail.updateDetails(srcFile.getIsChecked(), srcFile.getUnitScript());
+                    vcDetailRepository.save(existingDetail);
+                }
+            }
+
+            // 새로운 파일만 processFiles로 전달
+            List<SrcAudioFileRequestDto> newFiles = vcSaveDto.getSrcFiles().stream()
+                    .filter(file -> file.getId() == null) // ID가 없는 경우만 필터링
+                    .collect(Collectors.toList());
+
+            if (!newFiles.isEmpty()) {
+                processFiles(newFiles, localFiles, vcProject, AudioType.VC_SRC);
+            }
+        }
 
         return vcProject.getId();
     }
+
 
     // VCProject 생성, 저장
     private VCProject createNewVCProject(VCSaveDto vcSaveDto, Member member) {
@@ -263,12 +282,11 @@ public class VCService_team_multi {
         // src오디오는 중복으로 들어갈 수가 없다 검증 체크
         // detail id도 받고 localfilename도 받아야할까? => 같이 있으면 오디오 중복 검증을 할 수 있다
 
-        if (fileDtos == null || fileDtos.isEmpty()) { // 업로드 된 파일이 없을 때
-            return;
-        }
 
         for (SrcAudioFileDto fileDto : fileDtos) {
+
             MemberAudioMeta audioMeta = null;
+
 
             // detailId가 존재하면 해당 VCDetail을 조회하여 업데이트
             if(fileDto.getDetailId()!=null){
@@ -293,20 +311,26 @@ public class VCService_team_multi {
                             AudioType.VC_SRC
                     );
 
+
                     // 업로드된 파일을 통해 MemberAudioMeta 검색
                     audioMeta = memberAudioMetaRepository.findFirstByAudioUrl(uploadUrl)
                             .orElseThrow(() -> new BusinessException(ErrorCode.NOT_EXISTS_AUDIO));
                     memberAudioMetaRepository.selectAudio(audioMeta.getId(), AudioType.VC_TRG);
                 }
 
+                if (fileDto.getLocalFileName() == null && fileDto.getUnitScript() != null) {
+                    // 소스 파일은 VCDetail에 저장
+                    VCDetail vcDetail = VCDetail.createVCDetail(vcProject, audioMeta);
+                    vcDetail.updateDetails(fileDto.getIsChecked(), fileDto.getUnitScript());
+                    vcDetailRepository.save(vcDetail);
+                    continue;
+                }
+
                 if (audioMeta == null) {
                     throw new BusinessException(ErrorCode.INVALID_PROJECT_DATA);
                 }
 
-                // 소스 파일은 VCDetail에 저장
-                VCDetail vcDetail = VCDetail.createVCDetail(vcProject, audioMeta);
-                vcDetail.updateDetails(fileDto.getIsChecked(), fileDto.getUnitScript());
-                vcDetailRepository.save(vcDetail);
+
             }
         }
     }
