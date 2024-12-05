@@ -12,12 +12,13 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.Instant;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import static org.hibernate.sql.results.LoadingLogger.LOGGER;
 
 @Component
 public class ElevenLabsClient_team_api {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ElevenLabsClient_team_api.class);
 
     @Value("${elevenlabs.api.url}")
     private String baseUrl;
@@ -101,9 +102,14 @@ public class ElevenLabsClient_team_api {
                 return RequestBody.create(inputStream.readAllBytes(), MediaType.parse("audio/mpeg"));
             }
         } else {
-            throw new IllegalArgumentException("지원하지 않는 파일 경로입니다: " + audioPath);
+            File file = new File(audioPath);
+            if (!file.exists()) {
+                throw new IllegalArgumentException("파일이 존재하지 않습니다: " + audioPath);
+            }
+            return RequestBody.create(file, MediaType.parse("audio/mpeg"));
         }
     }
+
 
     /**
      * 파일 경로에서 파일 이름 추출.

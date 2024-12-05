@@ -115,6 +115,7 @@ public enum ErrorCode {
     VC_PROJECT_NOT_FOUND(5065, HttpStatus.BAD_REQUEST, "VC 프로젝트를 찾을 수 없습니다."),
     INTERNAL_SERVER_VC_ERROR(5066, HttpStatus.INTERNAL_SERVER_ERROR, "VC 처리 중 서버 오류가 발생했습니다."),
     INVALID_REQUEST_FILE_DATA(5067, HttpStatus.BAD_REQUEST, "유효하지 않은 요청 파일 데이터입니다."),
+    AUDIO_URL_NOT_FOUND(5068, HttpStatus.BAD_REQUEST, "Audio URL을 찾을 수 없습니다."),
 
     // 6000번대 코드 : 회원 서비스 예외
     PASSWORD_MISMATCH(6001, HttpStatus.BAD_REQUEST, "비밀번호가 일치하지 않습니다."),
@@ -144,13 +145,13 @@ public enum ErrorCode {
     PHONE_NUMBER_NULL(6025, HttpStatus.BAD_REQUEST, "전화번호는 비워둘 수 없습니다."),
     NAME_MISSING(6026, HttpStatus.BAD_REQUEST, "이름은 필수 입력 항목입니다."),
     TRG_FILES_EMPTY(4001, HttpStatus.BAD_REQUEST, "trgFiles가 비어 있습니다."),
+    DUPLICATE_VC_DETAIL(6028,HttpStatus.BAD_REQUEST,"중복된 듀플리케이트"),
 
-
-
+    INVALID_MEMBER_ID(6029,HttpStatus.BAD_REQUEST,"유효하지 않은 memberId입니다."),
 
 
     SERVICE_UNAVAILABLE(6027, HttpStatus.SERVICE_UNAVAILABLE, "서비스를 사용할 수 없습니다. 잠시 후 다시 시도해주세요."),
-
+    FILE_CONVERSION_FAILED(6030,HttpStatus.BAD_REQUEST,"변환실패"),
 
     // 7000번대 코드 : 작업 큐 관련 예외
     UNKNOWN_TASK_TYPE(7000, HttpStatus.NOT_FOUND, "작업 유형을 알 수 없습니다."),
@@ -159,8 +160,6 @@ public enum ErrorCode {
     FAILED_TASK_PROCESSING_ERROR(7003,HttpStatus.BAD_REQUEST,"실패 작업 처리 중 오류 발생"),
     DLQ_RETRY_FAILED(7004,HttpStatus.BAD_REQUEST,"실패 큐 작업 실패"),
     DLQ_MESSAGE_PROCESSING_FAILED(7005,HttpStatus.BAD_REQUEST,"x-death 헤더에서 원래 큐 정보를 찾을 수 없습니다."),
-
-
 
 
     // 9999 : 테스트용 커스텀 예외

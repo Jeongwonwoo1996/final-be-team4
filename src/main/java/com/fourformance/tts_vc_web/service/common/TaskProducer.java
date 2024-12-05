@@ -25,8 +25,6 @@ public class TaskProducer {
 
             rabbitTemplate.convertAndSend(TaskConfig.EXCHANGE_NAME, routingKey, message);
 
-            // 큐에 넣고, 상태를 waiting으로 바꾸는 로직 필요
-
             System.out.println("Sent message: [" + message + "] to routing key: " + routingKey);
         } catch (Exception e) {
             throw new RuntimeException("메시지 전송 중 오류 발생", e);
