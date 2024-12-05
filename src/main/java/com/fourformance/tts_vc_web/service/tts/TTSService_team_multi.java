@@ -82,6 +82,16 @@ public class TTSService_team_multi {
                 .collect(Collectors.toList());
     }
 
+    @Transactional
+    public Long saveTTSProject(TTSSaveDto dto, Long memberId){
+
+        Long projectId = dto.getProjectId() == null
+                ? createNewProject(dto, memberId)
+                : updateProject(dto, memberId);
+
+        return projectId;
+    }
+
 
     // 프로젝트 생성
     @Transactional
@@ -169,7 +179,7 @@ public class TTSService_team_multi {
         if (dto.getTtsDetails() != null) {
             for (TTSSaveDetailDto detailDto : dto.getTtsDetails()) {
                 // ttsDetail 업데이트 메서드 호출
-                processTTSDetail(detailDto, ttsProject);
+                updateTTSDetail(detailDto, ttsProject);
             }
         }
         return ttsProject.getId();
@@ -219,7 +229,7 @@ public class TTSService_team_multi {
     }
 
     // ttsDetail 업데이트 메서드
-    private void processTTSDetail(TTSSaveDetailDto detailDto, TTSProject ttsProject) {
+    private void updateTTSDetail(TTSSaveDetailDto detailDto, TTSProject ttsProject) {
         VoiceStyle detailStyle;
 
         if (detailDto.getUnitVoiceStyleId() != null){

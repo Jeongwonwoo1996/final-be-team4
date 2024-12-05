@@ -29,36 +29,9 @@ import org.springframework.web.multipart.MultipartFile;
 @RequestMapping("/concat")
 public class ConcatViewController_team_aws {
 
-    private final ConcatService_team_aws concatService;
     private final ProjectService_team_aws projectService;
-    private final MemberRepository memberRepository;
     private final S3Service s3Service;
 
-
-    // Concat 상태 저장 메서드
-    @Operation(
-            summary = "Concat 상태 저장",
-            description = "Concat 프로젝트 상태를 저장합니다.")
-    @PostMapping(value = "/save", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseDto concatSave(
-            @RequestPart(value = "concatSaveDto") ConcatSaveDto concatSaveDto, // 반드시 "concatSaveDto" 이름 지정
-            @RequestPart(value = "file", required = false) List<MultipartFile> files,
-            HttpSession session) {
-
-        if (session.getAttribute("memberId") == null) {
-            throw new BusinessException(ErrorCode.MEMBER_NOT_FOUND);
-        }
-
-        Long memberId = (Long) session.getAttribute("memberId");
-
-        // Member 객체 조회
-        Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
-
-        Long projectId = concatService.saveConcatProject(concatSaveDto, files, member);
-
-        return DataResponseDto.of(projectId, "Concat 상태가 성공적으로 저장되었습니다.");
-    }
 
 
     // Concat 프로젝트 삭제
