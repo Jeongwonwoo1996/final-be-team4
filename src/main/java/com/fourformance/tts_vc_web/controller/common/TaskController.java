@@ -94,11 +94,6 @@ public class TaskController {
         ttsServiceTaskJob.enqueueTTSBatchTasks(ttsRequestDto, memberId);
 
         return DataResponseDto.of("TTS 작업이 큐에 추가되었습니다.");
-//        return DataResponseDto.of(Map.of(
-//                "message", "TTS 작업이 큐에 추가되었습니다.",
-//                "projectId", ttsRequestDto.getProjectId(),
-//                "memberId", memberId
-//        ));
 
     }
 
@@ -123,11 +118,7 @@ public class TaskController {
         vcServiceTask.enqueueVCTasks(vcSaveRequestDto, files, memberId);
 
         return DataResponseDto.of("vc 작업이 큐에 추가되었습니다.");
-//        return DataResponseDto.of(Map.of(
-//                "message", "VC 작업이 큐에 추가되었습니다.",
-//                "projectId", vcSaveRequestDto.getProjectId(),
-//                "memberId", memberId
-//        ));
+
     }
 
     @PostMapping(
@@ -151,11 +142,7 @@ public class TaskController {
 
 
         return DataResponseDto.of("Concat 작업이 큐에 추가되었습니다.");
-//        return DataResponseDto.of(Map.of(
-//                "message", "CONCAT 작업이 큐에 추가되었습니다.",
-//                "projectId", concatRequestDto.getProjectId(),
-//                "memberId", memberId
-//        ));
+
 
     }
 
