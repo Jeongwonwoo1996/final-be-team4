@@ -32,7 +32,6 @@ public class ConcatViewController_team_aws {
     private final ProjectService_team_aws projectService;
     private final S3Service s3Service;
 
-
     // Concat 프로젝트 삭제
     @Operation(
             summary = "Concat 프로젝트 삭제",
@@ -64,8 +63,6 @@ public class ConcatViewController_team_aws {
         if (deleteDto.getDetailIds() != null) {
             projectService.deleteSelectedDetails(deleteDto.getDetailIds());
         }
-
-        // 선택된 오디오 삭제
         if (deleteDto.getAudioIds() != null) {
             projectService.deleteAudioIds(deleteDto.getAudioIds());
 

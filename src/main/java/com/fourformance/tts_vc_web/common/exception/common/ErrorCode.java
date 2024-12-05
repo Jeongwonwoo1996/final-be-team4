@@ -146,17 +146,12 @@ public enum ErrorCode {
     NAME_MISSING(6026, HttpStatus.BAD_REQUEST, "이름은 필수 입력 항목입니다."),
     TRG_FILES_EMPTY(4001, HttpStatus.BAD_REQUEST, "trgFiles가 비어 있습니다."),
     DUPLICATE_VC_DETAIL(6028,HttpStatus.BAD_REQUEST,"중복된 듀플리케이트"),
-
-
-
+    INVALID_MEMBER_ID(6029,HttpStatus.BAD_REQUEST,"유효하지 않은 memberId입니다."),
 
     SERVICE_UNAVAILABLE(6027, HttpStatus.SERVICE_UNAVAILABLE, "서비스를 사용할 수 없습니다. 잠시 후 다시 시도해주세요."),
 
-
     // 7000번대 코드 : 작업 큐 관련 예외
     UNKNOWN_TASK_TYPE(7000, HttpStatus.NOT_FOUND, "작업 유형을 알 수 없습니다."),
-
-
 
 
     // 9999 : 테스트용 커스텀 예외
