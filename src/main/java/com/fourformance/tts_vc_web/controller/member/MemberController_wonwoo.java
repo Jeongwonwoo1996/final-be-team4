@@ -50,6 +50,7 @@ public class MemberController_wonwoo {
         HttpSession session = request.getSession(true);
         session.setAttribute("memberId", memberLoginResponseDto.getId());
         session.setAttribute("email", memberLoginResponseDto.getEmail());
+        session.setAttribute("name", memberLoginResponseDto.getName());
         session.setAttribute("phoneNumber", memberLoginResponseDto.getPhoneNumber());
 
         return DataResponseDto.of(memberLoginResponseDto);

@@ -187,7 +187,8 @@ public class ProjectRepositoryCustomImpl implements ProjectRepositoryCustom {
 
         // QueryDSL fetchResults로 데이터 조회 및 변환
         QueryResults<Project> queryResults = queryFactory
-                .selectFrom(project)
+                .selectDistinct(project) // 중복 데이터 방지
+                .from(project)
                 .leftJoin(tTSProject).on(tTSProject.id.eq(project.id))
                 .leftJoin(tTSDetail).on(
                         tTSDetail.ttsProject.id.eq(tTSProject.id)
@@ -222,7 +223,7 @@ public class ProjectRepositoryCustomImpl implements ProjectRepositoryCustom {
                                 ))
                 )
                 .where(whereClause)
-                .orderBy(project.updatedAt.desc())
+                .orderBy(project.updatedAt.desc()) // 최신 업데이트 순으로 정렬
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
                 .fetchResults(); // fetchResults 사용
