@@ -1,13 +1,13 @@
 package com.fourformance.tts_vc_web.service.common;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fourformance.tts_vc_web.common.config.TaskConfig;
+import com.fourformance.tts_vc_web.common.constant.TaskStatusConst;
 import com.fourformance.tts_vc_web.common.exception.common.BusinessException;
 import com.fourformance.tts_vc_web.common.exception.common.ErrorCode;
 import com.fourformance.tts_vc_web.domain.entity.Member;
+import com.fourformance.tts_vc_web.domain.entity.Project;
 import com.fourformance.tts_vc_web.domain.entity.Task;
 import com.fourformance.tts_vc_web.dto.common.ConcatMsgDto;
 import com.fourformance.tts_vc_web.dto.common.TTSMsgDto;
@@ -15,16 +15,16 @@ import com.fourformance.tts_vc_web.dto.common.TaskLoadDto;
 import com.fourformance.tts_vc_web.dto.common.VCMsgDto;
 import com.fourformance.tts_vc_web.dto.response.ResponseDto;
 import com.fourformance.tts_vc_web.repository.MemberRepository;
+import com.fourformance.tts_vc_web.repository.ProjectRepository;
 import com.fourformance.tts_vc_web.repository.TaskRepository;
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.GetResponse;
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
 import org.springframework.amqp.rabbit.connection.Connection;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -38,11 +38,14 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class TaskService {
 
+    private final ProjectRepository projectRepository;
     private final TaskRepository taskRepository;
     private final ConnectionFactory connectionFactory;
     private final TaskProducer taskProducer;
     private final ObjectMapper objectMapper;
+    private final MemberRepository memberRepository;
 
+    @Transactional
     public List<TaskLoadDto> getTasksByMemberAndConditions(Long memberId) {
 
         //Member member = MemberRepository.findById(memberId);
@@ -53,6 +56,27 @@ public class TaskService {
         return taskList.stream()
                 .map(TaskLoadDto::createTaskLoadDto)
                 .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public void terminatePendingTasks(Long memberId) {
+
+        // 1. 존재하는 회원 ID가 있는지 찾기
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+
+        // 2. 회원 Id로 모든 프로젝트 조회
+        List<Long> projectIdList = projectRepository.findByMemberId(member.getId());
+
+        // 3. 프로젝트Id 로 completed, terminated가 아닌 모든 상태의 작업 조회
+        List<Task> pendingTasks = taskRepository.findByStatus(projectIdList);
+
+        // 4. 상태를 Terminated로 변경
+        for (Task task : pendingTasks) {
+            task.updateStatus(TaskStatusConst.TERMINATED);
+            taskRepository.save(task);
+        }
+
     }
 
     /**
@@ -82,6 +106,7 @@ public class TaskService {
                     // 메시지 바디 및 속성 가져오기
                     byte[] body = result.getBody(); // payload
                     String jsonString = new String(body);
+                    System.out.println("jsonString = " + jsonString);
                     //  {"taskId":12,"detailId":57,"projectId":31,"unitScript":"This is the first detail script.","unitSpeed":1.0,"unitPitch":0.3,"unitVolume":0.5,"unitVoiceStyleId":1}
 
                     AMQP.BasicProperties properties = result.getProps();
@@ -90,7 +115,6 @@ public class TaskService {
                     String originalQueue = getOriginalQueue(properties);
 
                     if (originalQueue == null) {
-                        System.err.println("원래 큐 정보를 찾을 수 없습니다. 메시지: " + jsonString);
                         // DLQ에서 메시지 제거하지 않고 다음 메시지로 넘어감
                         continue;
                     }
@@ -107,10 +131,8 @@ public class TaskService {
 
                     // DLQ에서 메시지 Ack 처리 (DLQ에서 제거)
                     channel.basicAck(result.getEnvelope().getDeliveryTag(), false);
-                    System.out.println("DLQ에서 메시지 Ack 처리 (DLQ에서 제거) 완료");
 
                     restartedCount++;
-                    System.out.println("restartedCount = " + restartedCount);
 
                 } catch (Exception e) {
                     // 처리 중 실패한 메시지는 다시 DLQ에 남김
@@ -200,3 +222,5 @@ public class TaskService {
         }
     }
 }
+
+

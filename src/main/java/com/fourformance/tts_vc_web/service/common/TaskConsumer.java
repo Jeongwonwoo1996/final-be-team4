@@ -82,6 +82,16 @@ public class TaskConsumer {
 
             if(projectId == -1L || detailId == -1L || taskId == -1) { throw new BusinessException(ErrorCode.JSON_PROCESSING_ERROR); }
 
+            // 상태가 TERMINATED인 작업은 처리하지 않고 ACK 후 종료
+            Task task = taskRepository.findById(taskId)
+                    .orElseThrow(() -> new BusinessException(ErrorCode.TASK_NOT_FOUND));
+
+            if (task.getTaskStatusConst() == TaskStatusConst.TERMINATED) {
+                channel.basicAck(tag, false); // 메시지 큐에서 제거
+                return;
+            }
+
+
             // 상태 업데이트
             updateStatus(taskId, TaskStatusConst.RUNNABLE, "작업 시작");
             sseService.sendToClient(projectId, "TTS 작업이 시작되었습니다.");
@@ -155,6 +165,15 @@ public class TaskConsumer {
 
             if(projectId == -1L || detailId == -1L || taskId == -1) { throw new BusinessException(ErrorCode.JSON_PROCESSING_ERROR); }
 
+            // 상태가 TERMINATED인 작업은 처리하지 않고 ACK 후 종료
+            Task task = taskRepository.findById(taskId)
+                    .orElseThrow(() -> new BusinessException(ErrorCode.TASK_NOT_FOUND));
+
+            if (task.getTaskStatusConst() == TaskStatusConst.TERMINATED) {
+                channel.basicAck(tag, false); // 메시지 큐에서 제거
+                return;
+            }
+
             // 상태 업데이트
             updateStatus(taskId, TaskStatusConst.RUNNABLE, "작업 시작");
             sseService.sendToClient(projectId, "VC 작업이 시작되었습니다.");
@@ -205,6 +224,15 @@ public class TaskConsumer {
             taskId    = concatMsgDto.getTaskId();
 
             if(projectId == -1L || taskId == -1) { throw new BusinessException(ErrorCode.JSON_PROCESSING_ERROR); }
+
+            // 상태가 TERMINATED인 작업은 처리하지 않고 ACK 후 종료
+            Task task = taskRepository.findById(taskId)
+                    .orElseThrow(() -> new BusinessException(ErrorCode.TASK_NOT_FOUND));
+
+            if (task.getTaskStatusConst() == TaskStatusConst.TERMINATED) {
+                channel.basicAck(tag, false); // 메시지 큐에서 제거
+                return;
+            }
 
             // 상태 업데이트
             updateStatus(taskId, TaskStatusConst.RUNNABLE, "작업 시작");
