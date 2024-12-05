@@ -295,7 +295,6 @@ public class VCService_team_multi {
 
                 vcDetail.updateDetails(fileDto.getIsChecked(), fileDto.getUnitScript());
                 vcDetailRepository.save(vcDetail);
-                continue;
             }else {
                 // detailId가 없으면 vcDetail 생성
                 String localFileName = fileDto.getLocalFileName();

@@ -21,4 +21,9 @@ public class EmitterRepository {
     public void deleteById(Long clientId) {
         emitters.remove(clientId);
     }
+
+    public void deleteAll() {emitters.clear();}
+
+    public int count() {return emitters.size();}
+
 }
