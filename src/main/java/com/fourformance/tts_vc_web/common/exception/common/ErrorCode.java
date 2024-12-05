@@ -146,7 +146,9 @@ public enum ErrorCode {
     NAME_MISSING(6026, HttpStatus.BAD_REQUEST, "이름은 필수 입력 항목입니다."),
     TRG_FILES_EMPTY(4001, HttpStatus.BAD_REQUEST, "trgFiles가 비어 있습니다."),
     DUPLICATE_VC_DETAIL(6028,HttpStatus.BAD_REQUEST,"중복된 듀플리케이트"),
+
     INVALID_MEMBER_ID(6029,HttpStatus.BAD_REQUEST,"유효하지 않은 memberId입니다."),
+
 
 
 
