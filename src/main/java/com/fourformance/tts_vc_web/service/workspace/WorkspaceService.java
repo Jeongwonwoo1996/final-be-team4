@@ -158,6 +158,8 @@ public class WorkspaceService {
         dto.setFileName(extractFileName(meta.getBucketRoute())); // 파일명 추출
         dto.setUrl(s3Service.generatePresignedUrl(meta.getBucketRoute())); // S3 Presigned URL 생성
         dto.setUnitStatus(getLatestUnitStatusFromMeta(meta)); // 최신 Unit Status 설정
+        dto.setCreateAt(meta.getCreatedAt()); // 생성일 기준으로 보여줌
+
 
         if (meta.getTtsDetail() != null) {
             // TTS 프로젝트 관련 설정
