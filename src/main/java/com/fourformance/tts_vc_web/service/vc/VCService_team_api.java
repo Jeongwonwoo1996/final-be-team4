@@ -148,6 +148,47 @@ public class VCService_team_api {
         return vcDetailsRes;
     }
 
+    //    /**
+//     * 타겟 파일을 처리하고 Voice ID를 생성하는 메서드입니다.
+//     *
+//     * @param trgFiles 타겟 오디오 파일 요청 DTO 리스트
+//     * @param memberId 회원 ID
+//     * @return 생성된 Voice ID
+//     */
+//    private String processTargetFiles(List<TrgAudioFileRequestDto> trgFiles, Long memberId) {
+//        if (trgFiles == null || trgFiles.isEmpty()) {
+//            log.error("[타겟 파일 처리 실패] 타겟 파일이 비어있습니다.");
+//            throw new BusinessException(ErrorCode.TRG_FILES_EMPTY);
+//        }
+//
+//        try {
+//            // Step 1: MemberAudioMeta 조회
+//            MemberAudioMeta memberAudio = memberAudioMetaRepository.findSelectedAudioByTypeAndMember(AudioType.VC_TRG, memberId);
+//            if (memberAudio == null || memberAudio.getAudioUrl() == null) {
+//                log.error("[타겟 오디오 처리 실패] MemberAudioMeta가 존재하지 않거나 URL이 없습니다.");
+//                throw new BusinessException(ErrorCode.FILE_NOT_FOUND);
+//            }
+//
+//            String targetFileUrl = memberAudio.getAudioUrl();
+//            log.info("[타겟 오디오 업로드 시작] URL: {}", targetFileUrl);
+//
+//            // Step 2: Voice ID 생성
+//            String voiceId = elevenLabsClient.uploadVoice(targetFileUrl);
+//            log.info("[Voice ID 생성 완료] Voice ID: {}", voiceId);
+//
+//            // Step 3: Voice ID 저장
+//            memberAudio.update(voiceId);
+//            memberAudioMetaRepository.save(memberAudio);
+//            log.info("[MemberAudioMeta 업데이트 완료] Voice ID: {}", voiceId);
+//
+//            return voiceId;
+//
+//        } catch (IOException e) {
+//            log.error("[Voice ID 생성 실패] {}", e.getMessage(), e);
+//            throw new BusinessException(ErrorCode.FILE_PROCESSING_ERROR);
+//        }
+//    }
+
     /**
      * 타겟 파일을 처리하고 Voice ID를 생성하는 메서드입니다.
      * 현재는 Voice ID가 하드코딩되어 있습니다.
