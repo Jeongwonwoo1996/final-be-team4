@@ -277,16 +277,10 @@ public class VCService_team_multi {
     }
 
     private void processSrcFiles(List<SrcAudioFileDto> fileDtos, List<MultipartFile> files, VCProject vcProject) {
-        // detail id가 존재하면 for문에서 다음으로 넘어가기
-        // detail id가 null이면
-        // src오디오는 중복으로 들어갈 수가 없다 검증 체크
-        // detail id도 받고 localfilename도 받아야할까? => 같이 있으면 오디오 중복 검증을 할 수 있다
-
 
         for (SrcAudioFileDto fileDto : fileDtos) {
 
             MemberAudioMeta audioMeta = null;
-
 
             // detailId가 존재하면 해당 VCDetail을 조회하여 업데이트
             if(fileDto.getDetailId()!=null){
@@ -295,7 +289,6 @@ public class VCService_team_multi {
 
                 vcDetail.updateDetails(fileDto.getIsChecked(), fileDto.getUnitScript());
                 vcDetailRepository.save(vcDetail);
-                continue;
             }else {
                 // detailId가 없으면 vcDetail 생성
                 String localFileName = fileDto.getLocalFileName();
@@ -318,18 +311,9 @@ public class VCService_team_multi {
                     memberAudioMetaRepository.selectAudio(audioMeta.getId(), AudioType.VC_TRG);
                 }
 
-                if (fileDto.getLocalFileName() == null && fileDto.getUnitScript() != null) {
-                    // 소스 파일은 VCDetail에 저장
-                    VCDetail vcDetail = VCDetail.createVCDetail(vcProject, audioMeta);
-                    vcDetail.updateDetails(fileDto.getIsChecked(), fileDto.getUnitScript());
-                    vcDetailRepository.save(vcDetail);
-                    continue;
-                }
-
-                if (audioMeta == null) {
-                    throw new BusinessException(ErrorCode.INVALID_PROJECT_DATA);
-                }
-
+                VCDetail vcDetail = VCDetail.createVCDetail(vcProject, audioMeta);
+                vcDetail.updateDetails(fileDto.getIsChecked(), fileDto.getUnitScript());
+                vcDetailRepository.save(vcDetail);
 
             }
         }

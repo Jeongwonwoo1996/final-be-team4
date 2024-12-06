@@ -22,6 +22,8 @@ import com.fourformance.tts_vc_web.service.common.S3Service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import com.fourformance.tts_vc_web.service.common.TaskProducer;
+import org.springframework.transaction.annotation.Isolation;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -146,98 +148,59 @@ public class VCService_TaskJob {
         }
     }
 
-
-
-    /**
-     * VC 프로젝트 상태 업데이트
-     */
-    public void updateProjectStatus(Long detailId) {
-        VCDetail detail = vcDetailRepository.findById(detailId)
-                .orElseThrow(()->new BusinessException(ErrorCode.VC_DETAIL_NOT_FOUND));
-
-
-//        boolean hasFailure = false;
-//        boolean allSuccess = true;
-//        for (VCDetail detail : details) {
-//            List<APIStatus> apiStatuses = detail.getApiStatuses();
-//            if (apiStatuses.stream().anyMatch(status -> status.getApiUnitStatusConst() == APIUnitStatusConst.FAILURE)) {
-//                hasFailure = true;
-//                allSuccess = false;
-//                break;
-//            }
-//            if (!apiStatuses.stream().allMatch(status -> status.getApiUnitStatusConst() == APIUnitStatusConst.SUCCESS)) {
-//                allSuccess = false;
-//            }
+//    @Transactional
+//    public void enqueueVCTasks(VCSaveRequestDto vcReqDto, List<MultipartFile> files, Long memberId) {
+//        // 프로젝트 저장, 디테일 저장
+//        Member member = memberRepository.findById(memberId)
+//                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+//
+//        // Step 2: VC 프로젝트 저장 및 ID 반환, VcDetail 저장
+//        Long projectId = vcService.saveVCProject(vcReqDto, files, member);
+//        if (projectId == null) {
+//            throw new BusinessException(ErrorCode.PROJECT_NOT_FOUND);
 //        }
-//        VCProject project = vcProjectRepository.findById(projectId)
-//                .orElseThrow(() -> new BusinessException(ErrorCode.PROJECT_NOT_FOUND));
-//        if (hasFailure) {
-//            project.updateAPIStatus(APIStatusConst.FAILURE);
-//        } else if (allSuccess) {
-//            project.updateAPIStatus(APIStatusConst.SUCCESS);
-//        } else {
-//            project.updateAPIStatus(APIStatusConst.NOT_STARTED);
+//        // vcProject 객체 반환
+//        VCProject vcProject = vcProjectRepository.findById(projectId)
+//                .orElseThrow(() -> new BusinessException(ErrorCode.VC_PROJECT_NOT_FOUND));
+//
+//        // Step 3: 프로젝트 ID로 연관된 VC 디테일(src) 조회
+//        List<VCDetail> vcDetails = vcDetailRepository.findByVcProject_Id(projectId);
+//
+//        // Step 4: VC 디테일 DTO 변환 및 필터링 (체크된 항목만)
+//        List<VCDetailDto> vcDetailDtos = vcDetails.stream()
+//                .filter(vcDetail -> vcDetail.getIsChecked() && !vcDetail.getIsDeleted())
+//                .map(VCDetailDto::createVCDetailDtoWithLocalFileName)
+//                .collect(Collectors.toList());
+//
+//        // Step 5: 저장된 타겟(TRG) 오디오 정보 가져오기
+//        MemberAudioMeta memberAudio = memberAudioMetaRepository.findSelectedAudioByTypeAndMember(AudioType.VC_TRG, memberId);
+//
+//        String voiceId;
+//        if (memberAudio != null) {
+//            // Step 6: 타겟 오디오로 Voice ID 생성
+//            voiceId = processTargetFiles(vcReqDto.getTrgFiles(), memberAudio);
+//
+//        }else{
+//            voiceId = memberAudioMetaRepository.findtrgVoiceIdById(vcReqDto.getTrgFiles().get(0).getS3MemberAudioMetaId());
 //        }
-//        vcProjectRepository.save(project);
-//        LOGGER.info("[VC 프로젝트 상태 업데이트 완료]");
-    }
-
-
-
-
-    @Transactional
-    public void enqueueVCTasks(VCSaveRequestDto vcReqDto, List<MultipartFile> files, Long memberId) {
-        // 프로젝트 저장, 디테일 저장
-        Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
-
-        // Step 2: VC 프로젝트 저장 및 ID 반환, VcDetail 저장
-        Long projectId = vcService.saveVCProject(vcReqDto, files, member);
-        if (projectId == null) {
-            throw new BusinessException(ErrorCode.PROJECT_NOT_FOUND);
-        }
-        // vcProject 객체 반환
-        VCProject vcProject = vcProjectRepository.findById(projectId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.VC_PROJECT_NOT_FOUND));
-
-        // Step 3: 프로젝트 ID로 연관된 VC 디테일(src) 조회
-        List<VCDetail> vcDetails = vcDetailRepository.findByVcProject_Id(projectId);
-
-        // Step 4: VC 디테일 DTO 변환 및 필터링 (체크된 항목만)
-        List<VCDetailDto> vcDetailDtos = vcDetails.stream()
-                .filter(vcDetail -> vcDetail.getIsChecked() && !vcDetail.getIsDeleted())
-                .map(VCDetailDto::createVCDetailDtoWithLocalFileName)
-                .collect(Collectors.toList());
-
-        // Step 5: 저장된 타겟(TRG) 오디오 정보 가져오기
-        MemberAudioMeta memberAudio = memberAudioMetaRepository.findSelectedAudioByTypeAndMember(AudioType.VC_TRG, memberId);
-
-        String voiceId;
-        if (memberAudio != null) {
-            // Step 6: 타겟 오디오로 Voice ID 생성
-            voiceId = processTargetFiles(vcReqDto.getTrgFiles(), memberAudio);
-
-        }else{
-            voiceId = memberAudioMetaRepository.findtrgVoiceIdById(vcReqDto.getTrgFiles().get(0).getS3MemberAudioMetaId());
-        }
-
-        // Step 7: VC 프로젝트에 trg_voice_id 업데이트
-        updateProjectTargetVoiceId(projectId, voiceId);
-
-        // vcDetailDtos에서 하나씩 꺼내서 Task 생성하고 큐에 넣기
-        for (VCDetailDto detail : vcDetailDtos) {
-            // dto를 문자열 json으로 변환
-            String detailJson = convertDetailToJson(detail);
-
-            // Task 생성 및 저장
-            Task task = Task.createTask(vcProject, ProjectType.VC, detailJson);
-            taskRepository.save(task);
-
-            // 메시지 생성 및 RabbitMQ에 전송
-            VCMsgDto message = createVCMsgDto(detail, task.getId(), memberId, voiceId);
-            taskProducer.sendTask("AUDIO_VC", message);
-        }
-    }
+//
+//        // Step 7: VC 프로젝트에 trg_voice_id 업데이트
+//        updateProjectTargetVoiceId(projectId, voiceId);
+//
+//        // vcDetailDtos에서 하나씩 꺼내서 Task 생성하고 큐에 넣기
+//        for (VCDetailDto detail : vcDetailDtos) {
+//            // dto를 문자열 json으로 변환
+//            String detailJson = convertDetailToJson(detail);
+//
+//            // Task 생성 및 저장
+//            Task task = Task.createTask(vcProject, ProjectType.VC, detailJson);
+//            taskRepository.save(task);
+//
+//            // 메시지 생성 및 RabbitMQ에 전송
+//            VCMsgDto message = createVCMsgDto(detail, task.getId(), memberId, voiceId);
+//            taskProducer.sendTask("AUDIO_VC", message);
+//        }
+//    }
 
     /**
      * dto를 문자열 json으로 변환
@@ -301,4 +264,75 @@ public class VCService_TaskJob {
         vcProject.updateTrgVoiceId(trgVoiceId);
         vcProjectRepository.save(vcProject);
     }
+
+    //-----------------------------------------------------------------------------
+
+
+    @Transactional(isolation = Isolation.SERIALIZABLE, propagation = Propagation.REQUIRED)
+    public void enqueueVCTasks(VCSaveRequestDto vcReqDto, List<MultipartFile> files, Long memberId) {
+        // Step 1: 멤버 확인
+        Member member = validateMember(memberId);
+
+        // Step 2: VC 프로젝트 저장 및 디테일 정보 조회
+        VCProject vcProject = saveVCProjectAndGetDetails(vcReqDto, files, member);
+
+        // Step 3: 타겟 Voice ID 생성 또는 조회
+        String voiceId = getOrCreateVoiceId(vcReqDto, memberId);
+
+        // Step 4: VC 디테일로 Task 생성 및 큐에 추가
+        processDetailsForQueue(vcReqDto, vcProject, voiceId, memberId);
+    }
+
+    private Member validateMember(Long memberId) {
+        return memberRepository.findById(memberId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+    }
+
+    private VCProject saveVCProjectAndGetDetails(VCSaveRequestDto vcReqDto, List<MultipartFile> files, Member member) {
+        Long projectId = vcService.saveVCProject(vcReqDto, files, member);
+
+        if (projectId == null) {
+            throw new BusinessException(ErrorCode.PROJECT_NOT_FOUND);
+        }
+
+        return vcProjectRepository.findById(projectId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.VC_PROJECT_NOT_FOUND));
+    }
+
+    private String getOrCreateVoiceId(VCSaveRequestDto vcReqDto, Long memberId) {
+        MemberAudioMeta memberAudio = memberAudioMetaRepository.findSelectedAudioByTypeAndMember(AudioType.VC_TRG, memberId);
+
+        if (memberAudio != null) {
+            return processTargetFiles(vcReqDto.getTrgFiles(), memberAudio);
+        } else {
+            return memberAudioMetaRepository.findtrgVoiceIdById(vcReqDto.getTrgFiles().get(0).getS3MemberAudioMetaId());
+        }
+    }
+
+    private void processDetailsForQueue(VCSaveRequestDto vcReqDto, VCProject vcProject, String voiceId, Long memberId) {
+        List<VCDetail> vcDetails = vcDetailRepository.findByVcProject_Id(vcProject.getId());
+
+        List<VCDetailDto> vcDetailDtos = vcDetails.stream()
+                .filter(vcDetail -> vcDetail.getIsChecked() && !vcDetail.getIsDeleted())
+                .map(VCDetailDto::createVCDetailDtoWithLocalFileName)
+                .collect(Collectors.toList());
+
+        for (VCDetailDto detail : vcDetailDtos) {
+            Task task = createAndSaveTask(vcProject, detail);
+            sendTaskToQueue(detail, task, memberId, voiceId);
+        }
+    }
+
+    private Task createAndSaveTask(VCProject vcProject, VCDetailDto detail) {
+        String detailJson = convertDetailToJson(detail);
+        Task task = Task.createTask(vcProject, ProjectType.VC, detailJson);
+        taskRepository.save(task);
+        return task;
+    }
+
+    private void sendTaskToQueue(VCDetailDto detail, Task task, Long memberId, String voiceId) {
+        VCMsgDto message = createVCMsgDto(detail, task.getId(), memberId, voiceId);
+        taskProducer.sendTask("AUDIO_VC", message);
+    }
+
 }
