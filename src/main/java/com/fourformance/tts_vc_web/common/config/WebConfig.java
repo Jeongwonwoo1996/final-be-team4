@@ -17,8 +17,11 @@ public class WebConfig implements WebMvcConfigurer {
                         "https://dev.popomance.kr",
                         "https://www.popomance.kr",
                         "https://popomance.kr",
-                        "https://*.web.app"
-                ) // 일부 도메인 허용
+                        "https://*.web.app",
+                        "https://aipark-four-t--preview-mfbtwo6o.web.app",
+                        "https://aipark-four-t.web.app",
+                        "https://aipark-four-t.firebaseapp.com"
+                ) // 허용할 도메인
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS") // 허용할 메서드
                 .allowedHeaders("*") // 모든 헤더 허용
                 .allowCredentials(true) // 인증 정보 허용
