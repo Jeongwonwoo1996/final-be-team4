@@ -12,5 +12,4 @@ import lombok.Setter;
 @NoArgsConstructor
 public class TrgAudioFileRequestDto extends AudioFileDto {
     private Long s3MemberAudioMetaId; //  S3 메타 정보 (DB에서 조회)
-    private AudioType audioType; // 오디오 타입 (VC_TRG 또는 VC_SRC)
 }
