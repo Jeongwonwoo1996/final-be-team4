@@ -17,10 +17,10 @@ TTS, VC, Concat 음성 처리 웹 사이트를 개발하는 프로젝트입니�
 - Java 17
 - Spring Boot 3.3.5
 - Dependencies :
-    - Lombok
     - Spring Data JPA
     - Spring Security
     - MySQL Driver
+    - Lombok
     - QueryDSL
     - SpringAMQP
 
