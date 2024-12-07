@@ -13,11 +13,11 @@ public class WebConfig implements WebMvcConfigurer {
                 .allowedOrigins(
                         "http://localhost:5173",
                         "http://127.0.0.1:5173",
-                        "http://172.*.*.*/5173",
+//                        "http://172.*.*.*/5173",
                         "https://dev.popomance.kr",
                         "https://www.popomance.kr",
                         "https://popomance.kr",
-                        "https://*.web.app",
+//                        "https://*.web.app",
                         "https://aipark-four-t--preview-mfbtwo6o.web.app",
                         "https://aipark-four-t.web.app",
                         "https://aipark-four-t.firebaseapp.com"
