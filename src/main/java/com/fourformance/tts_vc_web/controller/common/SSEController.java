@@ -34,6 +34,7 @@ public class SSEController {
 
     /**
      * 특정 클라이언트 연결 종료
+     * 특정 기간동안 아무것도 없으면 강제 종료 시키기 로직 추가
      */
     @DeleteMapping("/{clientId}")
     public ResponseEntity<String> disconnect(@PathVariable Long clientId) {
