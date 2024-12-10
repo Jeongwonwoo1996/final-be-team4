@@ -2,6 +2,8 @@ package com.fourformance.tts_vc_web.controller.common;
 
 import com.fourformance.tts_vc_web.service.common.SseEmitterService;
 import java.util.concurrent.ConcurrentHashMap;
+
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -19,7 +21,10 @@ public class SSEController {
      * 클라이언트의 SSE 구독 요청을 처리 (새 연결 생성)
      */
     @GetMapping(value = "/{clientId}", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public SseEmitter subscribe(@PathVariable Long clientId) {
+    public SseEmitter subscribe(@PathVariable Long clientId, HttpServletResponse response) {
+        response.setHeader("Content-Type", MediaType.TEXT_EVENT_STREAM_VALUE);
+        response.setHeader("Cache-Control", "no-cache");
+        response.setHeader("Connection", "keep-alive");
         return sseEmitterService.subscribe(clientId);
     }
 
