@@ -22,6 +22,7 @@ public class SSEController {
      */
     @GetMapping(value = "/{clientId}", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter subscribe(@PathVariable Long clientId, HttpServletResponse response) {
+        // Content-Type 설정
         response.setHeader("Content-Type", MediaType.TEXT_EVENT_STREAM_VALUE);
         response.setHeader("Cache-Control", "no-cache");
         response.setHeader("Connection", "keep-alive");
