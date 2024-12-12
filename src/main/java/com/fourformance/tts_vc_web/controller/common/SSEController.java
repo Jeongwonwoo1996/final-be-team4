@@ -2,6 +2,8 @@ package com.fourformance.tts_vc_web.controller.common;
 
 import com.fourformance.tts_vc_web.service.common.SseEmitterService;
 import java.util.concurrent.ConcurrentHashMap;
+
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -18,8 +20,12 @@ public class SSEController {
     /**
      * 클라이언트의 SSE 구독 요청을 처리 (새 연결 생성)
      */
-    @PostMapping("/{clientId}")
-    public SseEmitter subscribe(@PathVariable Long clientId) {
+    @GetMapping(value = "/{clientId}", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter subscribe(@PathVariable Long clientId, HttpServletResponse response) {
+        // Content-Type 설정
+        response.setHeader("Content-Type", MediaType.TEXT_EVENT_STREAM_VALUE);
+        response.setHeader("Cache-Control", "no-cache");
+        response.setHeader("Connection", "keep-alive");
         return sseEmitterService.subscribe(clientId);
     }
 
@@ -27,24 +33,28 @@ public class SSEController {
      * 서버에서 특정 클라이언트로 데이터 전송 (디버그/테스트용)
      */
     @PostMapping("/{clientId}/messages")
-    public void sendMessageToClient(@PathVariable Long clientId, @RequestBody String message) {
+    public ResponseEntity<String> sendMessageToClient(@PathVariable Long clientId, @RequestBody String message) {
         sseEmitterService.sendToClient(clientId, message);
+        return ResponseEntity.ok("Message sent to clientId: " + clientId);
     }
 
     /**
      * 특정 클라이언트 연결 종료
+     * 특정 기간동안 아무것도 없으면 강제 종료 시키기 로직 추가
      */
     @DeleteMapping("/{clientId}")
-    public void disconnect(@PathVariable Long clientId) {
+    public ResponseEntity<String> disconnect(@PathVariable Long clientId) {
         sseEmitterService.disconnect(clientId);
+        return ResponseEntity.ok("Disconnected clientId: " + clientId);
     }
 
     /**
      * 모든 연결 종료
      */
     @DeleteMapping
-    public void disconnectAll() {
+    public ResponseEntity<String> disconnectAll() {
         sseEmitterService.disconnectAll();
+        return ResponseEntity.ok("All clients disconnected");
     }
 
     /**

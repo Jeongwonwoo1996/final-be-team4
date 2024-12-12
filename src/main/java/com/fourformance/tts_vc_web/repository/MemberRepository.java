@@ -32,4 +32,7 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
      */
     boolean existsByEmail(String email);
 
+    // clientId가 Member 테이블에 존재하는지 확인 - 유람
+    boolean existsById(Long id);
+
 }
